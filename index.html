@@ -1,308 +1,278 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Jayena – Admin</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Amistades Belgas — Pedido de bebidas</title>
+  <meta name="color-scheme" content="light dark">
   <style>
-    :root{--bg:#f7f7fb;--panel:#fff;--muted:#6b7280;--text:#111827;--accent:#0ea5e9;--brd:rgba(17,24,39,.12)}
-    [data-theme="dark"]{--bg:#0f172a;--panel:#0b1220;--muted:#9ca3af;--text:#e5e7eb;--accent:#38bdf8;--brd:rgba(255,255,255,.15)}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell; background:var(--bg);color:var(--text)}
-    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    :root{
+      --bg:#f6f7fb; --panel:#fff; --text:#0f172a; --muted:#6b7280; --accent:#0ea5e9;
+      --brd:rgba(15,23,42,.12); --shadow:0 10px 30px rgba(0,0,0,.08); --radius:16px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b1220; --panel:#0f172a; --text:#e5e7eb; --muted:#a0a7b2; --accent:#38bdf8; --brd:rgba(255,255,255,.12) }
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial}
+    body{background:var(--bg); color:var(--text)}
+    .wrap{max-width:920px;margin:0 auto;padding:clamp(12px,3vw,20px)}
     header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-    .card{background:var(--panel);border:1px solid var(--brd);border-radius:14px;padding:12px}
-    .grid{display:grid;gap:12px}
-    .grid.cols-2{grid-template-columns:1.2fr .8fr}
-    @media(max-width:700px){.grid.cols-2{grid-template-columns:1fr}}
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    select,input,button{padding:8px 10px;border:1px solid var(--brd);border-radius:10px;background:#fff;color:var(--text)}
-    [data-theme="dark"] select,[data-theme="dark"] input,[data-theme="dark"] button{background:#0f172a;color:var(--text)}
-    button{cursor:pointer;font-weight:600}
-    h1{margin:0;font-size:20px}
-    h2{margin:8px 0 4px 0;font-size:18px}
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    th,td{border-top:1px solid var(--brd);padding:8px;text-align:left}
-    th{font-weight:700}
-    .muted{color:var(--muted)}
-    .pill{background:rgba(56,189,248,.12);border:1px dashed rgba(56,189,248,.35);color:var(--accent);padding:4px 8px;border-radius:999px;font-size:12px}
-    .totals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-    .kpi{background:var(--panel);border:1px solid var(--brd);border-radius:12px;padding:10px}
-    .kpi strong{font-size:18px}
-    .chart{width:100%;max-width:520px}
-    #msg{display:none;margin-bottom:10px;padding:10px;border-radius:10px;background:#fff0f0;border:1px solid rgba(239,68,68,.35);color:#7f1d1d}
-    [data-theme="dark"] #msg{background:#2c1a1a;border-color:#7f1d1d;color:#fecaca}
-    /* Leyenda de colores para el pie */
-    #legend{display:grid;gap:6px;margin-top:6px}
-    .legend-item{display:flex;align-items:center;gap:8px;font-size:14px}
-    .legend-item .swatch{width:12px;height:12px;border-radius:3px;border:1px solid var(--brd)}
+    h1{margin:0;font-size:clamp(18px,4.5vw,26px)}
+    .card{background:var(--panel);border:1px solid var(--brd);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    label{font-size:14px;color:var(--muted)}
+    select,input,button{border:1px solid var(--brd);border-radius:12px;padding:10px 12px;background:#fff}
+    @media (prefers-color-scheme: dark){ select,input,button{background:#0b1324;color:var(--text)} }
+    .btn{cursor:pointer;font-weight:600}
+    .btn-primary{background:linear-gradient(90deg,var(--accent),#7dd3fc); color:#001319; border:0}
+    .btn-ghost{background:transparent}
+    .grid{display:grid;gap:10px}
+    .drinks{grid-template-columns:1fr}
+    @media(min-width:560px){ .drinks{grid-template-columns:repeat(2,1fr)} }
+    @media(min-width:860px){ .drinks{grid-template-columns:repeat(3,1fr)} }
+    .drink{display:grid;gap:8px;padding:12px;border:1px solid var(--brd);border-radius:14px;background:var(--panel)}
+    .drink h3{margin:0;font-size:16px}
+    .muted{color:var(--muted);font-size:12px}
+    .qty{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .qty input{width:64px;text-align:center;font-weight:700}
+    .btn-circle{width:40px;height:40px;border-radius:12px;font-size:20px;display:grid;place-items:center;background:#eef2ff;border:1px solid var(--brd)}
+    @media (prefers-color-scheme: dark){ .btn-circle{background:#111a2b} }
+    .totals{display:grid;gap:8px}
+    .total-line{display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px dashed var(--brd);border-radius:12px}
+    .error{color:#b91c1c;font-size:13px;margin-top:6px;display:none}
+    .badge{padding:6px 10px;border-radius:999px;border:1px dashed var(--brd);font-size:12px}
   </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="row">
-      <h1>Jayena – Panel Admin</h1>
-      <span class="pill">solo lectura</span>
-    </div>
-    <div class="row">
-      <select id="rangeSel">
-        <option value="today">Hoy</option>
-        <option value="month" selected>Este mes</option>
-        <option value="custom">Personalizado…</option>
-      </select>
-      <input id="fromDate" type="date" style="display:none"/>
-      <input id="toDate" type="date" style="display:none"/>
-      <button id="reloadBtn">Actualizar</button>
-    </div>
+  <div class="wrap">
+    <header>
+      <h1 id="t-title">Amistades Belgas — Pedido</h1>
       <div class="row">
-      <button id="themeToggle" title="Cambiar tema">🌙</button>
-    </div>
-  </header>
+        <label for="langSel" id="t-language">Idioma</label>
+        <select id="langSel" aria-label="Idioma">
+          <option value="fr">FR</option>
+          <option value="nl">NL</option>
+          <option value="en">EN</option>
+          <option value="es" selected>ES</option>
+        </select>
+      </div>
+    </header>
 
-  <div id="msg"></div>
-
-  <div class="grid cols-2">
-    <div class="card">
-      <h2>Resumen</h2>
-      <div class="totals">
-        <div class="kpi"><div class="muted">Unidades totales</div><strong id="kpiUnits">0</strong></div>
-        <div class="kpi"><div class="muted">Importe total (€)</div><strong id="kpiAmount">0,00</strong></div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="row">
+        <div style="min-width:220px">
+          <label for="nameInput" id="t-yourname">Tu nombre</label><br/>
+          <input id="nameInput" type="text" placeholder="…" required/>
+          <div id="nameErr" class="error">El nombre es obligatorio</div>
+        </div>
+        <span class="badge" id="t-open-thu">Abierto los jueves</span>
       </div>
     </div>
+
     <div class="card">
-      <h2>Por bebida (€)</h2>
-      <div class="row">
-        <svg id="pie" class="chart" viewBox="0 0 240 240"></svg>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong id="t-drinks">Bebidas</strong>
+        <span class="muted" id="t-tap-to-add">Elige cantidades con − / +</span>
       </div>
-      <div id="legend" class="muted" style="margin-top:6px"></div>
+      <div id="drinks" class="grid drinks" style="margin-top:8px"></div>
+
+      <div class="totals" style="margin-top:12px">
+        <div class="total-line"><span id="t-total">Total</span><strong><span id="totalAmount">0,00</span> €</strong></div>
+        <div class="row" style="gap:8px;margin-top:2px">
+          <button id="sendBtn" class="btn btn-primary">Enviar pedido</button>
+          <button id="clearBtn" class="btn btn-ghost">Borrar pedido</button>
+        </div>
+        <div id="orderErr" class="error">Agrega al menos una bebida</div>
+      </div>
     </div>
   </div>
 
-  <div class="grid" style="margin-top:12px">
-    <div class="card">
-      <h2>Por usuario</h2>
-      <table id="byUser"><thead><tr><th>Usuario</th><th>Unidades</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
-    </div>
-    <div class="card">
-      <h2>Por bebida</h2>
-      <table id="byDrink"><thead><tr><th>Bebida</th><th>Unidades</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
-    </div>
-    <div class="card">
-      <h2>Por día</h2>
-      <table id="byDay"><thead><tr><th>Fecha</th><th>Unidades</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
-    </div>
-    <div class="card">
-      <h2>Rondas (detalle)</h2>
-      <table id="rounds"><thead><tr><th>Fecha</th><th>Hora</th><th>Usuario</th><th>Unid.</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
-    </div>
-  </div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyD1EW9ARFqGsxxd0Ska4GiItKERayouuVs",
-  authDomain: "jayena-drinks.firebaseapp.com",
-  projectId: "jayena-drinks",
+<script>
+/* ==================== i18n ==================== */
+const I18N = {
+  es: { title:"Amistades Belgas — Pedido", language:"Idioma", yourname:"Tu nombre",
+        drinks:"Bebidas", tapToAdd:"Elige cantidades con − / +", total:"Total",
+        send:"Enviar pedido", clear:"Borrar pedido",
+        nameRequired:"El nombre es obligatorio", orderRequired:"Agrega al menos una bebida",
+        openThu:"Abierto los jueves", currency:"€" },
+  fr: { title:"Amistades Belgas — Commande", language:"Langue", yourname:"Votre nom",
+        drinks:"Boissons", tapToAdd:"Choisissez les quantités avec − / +", total:"Total",
+        send:"Envoyer la commande", clear:"Effacer la commande",
+        nameRequired:"Le nom est obligatoire", orderRequired:"Ajoutez au moins une boisson",
+        openThu:"Ouvert le jeudi", currency:"€" },
+  nl: { title:"Amistades Belgas — Bestelling", language:"Taal", yourname:"Je naam",
+        drinks:"Drankjes", tapToAdd:"Kies hoeveelheden met − / +", total:"Totaal",
+        send:"Bestelling verzenden", clear:"Bestelling wissen",
+        nameRequired:"Naam is verplicht", orderRequired:"Voeg minstens één drankje toe",
+        openThu:"Open op donderdag", currency:"€" },
+  en: { title:"Amistades Belgas — Drinks Order", language:"Language", yourname:"Your name",
+        drinks:"Drinks", tapToAdd:"Pick quantities with − / +", total:"Total",
+        send:"Send order", clear:"Clear order",
+        nameRequired:"Name is required", orderRequired:"Add at least one drink",
+        openThu:"Open on Thursdays", currency:"€" }
 };
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
-// catálogo bebidas + precios (igual que el front)
-const DRINKS = [
-  { id:'agua', price:1.00, label:{es:'Agua sin gas', fr:'Eau plate', nl:'Plat water', en:'Still water'} },
-  { id:'aguaGas', price:1.00, label:{es:'Agua con gas', fr:'Eau gazeuse', nl:'Spuitwater', en:'Sparkling water'} },
-  { id:'coca', price:1.50, label:{es:'Coca Cola', fr:'Coca-Cola', nl:'Coca-Cola', en:'Coca-Cola'} },
-  { id:'cocaz', price:1.50, label:{es:'Coca Cola Zero', fr:'Coca-Cola Zéro', nl:'Coca-Cola Zero', en:'Coke Zero'} },
-  { id:'fantaN', price:1.50, label:{es:'Fanta Naranja', fr:'Fanta Orange', nl:'Fanta Sinaas', en:'Fanta Orange'} },
-  { id:'fantaL', price:1.50, label:{es:'Fanta Limón', fr:'Fanta Citron', nl:'Fanta Citroen', en:'Fanta Lemon'} },
-  { id:'nestea', price:1.50, label:{es:'Nestea', fr:'Nestea', nl:'Nestea', en:'Nestea'} },
-  { id:'tonica', price:1.50, label:{es:'Tónica', fr:'Tonic', nl:'Tonic', en:'Tonic'} },
-  { id:'bitter', price:1.50, label:{es:'Bitter Kas', fr:'Bitter Kas', nl:'Bitter Kas', en:'Bitter Kas'} },
-  { id:'cerveza', price:1.50, label:{es:'Cerveza', fr:'Bière', nl:'Bier', en:'Beer'} },
-  { id:'sinAlc', price:1.50, label:{es:'Cerveza Sin Alcohol', fr:'Bière sans alcool', nl:'Alcoholvrij bier', en:'Alcohol-free beer'} },
-  { id:'leffe', price:2.50, label:{es:'Leffe bl', fr:'Leffe Blonde', nl:'Leffe Blond', en:'Leffe Blonde'} },
-  { id:'duvel', price:2.50, label:{es:'Duvel', fr:'Duvel', nl:'Duvel', en:'Duvel'} },
-  { id:'omer', price:2.50, label:{es:'Omer', fr:'Omer', nl:'Omer', en:'Omer'} },
-  { id:'chimay', price:3.00, label:{es:'Chimay Blauw', fr:'Chimay Bleue', nl:'Chimay Blauw', en:'Chimay Blue'} },
-  { id:'kriek', price:2.50, label:{es:'Kriek', fr:'Kriek', nl:'Kriek', en:'Kriek'} },
-  { id:'vinoTinto', price:7.50, label:{es:'Vino Tinto', fr:'Vin rouge', nl:'Rode wijn', en:'Red wine'} },
-  { id:'vinoBlanco', price:7.50, label:{es:'Vino blanco', fr:'Vin blanc', nl:'Witte wijn', en:'White wine'} },
-  { id:'vinoRosado', price:7.00, label:{es:'Vino Rosado', fr:'Vin rosé', nl:'Rosé wijn', en:'Rosé wine'} },
-  { id:'botellaVino', price:9.00, label:{es:'Botella vino', fr:'Bouteille de vin', nl:'Fles wijn', en:'Bottle of wine'} },
-  { id:'cavaPeq', price:2.50, label:{es:'Cava pequeño', fr:'Cava petit', nl:'Kleine cava', en:'Small cava'} },
-  { id:'cavaGrande', price:11.00, label:{es:'Cava Grande', fr:'Cava grande', nl:'Grote cava', en:'Large cava'} },
-  { id:'whisky', price:2.50, label:{es:'Whisky', fr:'Whisky', nl:'Whisky', en:'Whisky'} },
-  { id:'cognac', price:2.50, label:{es:'Cognac', fr:'Cognac', nl:'Cognac', en:'Cognac'} },
-  { id:'gin', price:2.50, label:{es:'Gin', fr:'Gin', nl:'Gin', en:'Gin'} },
-  { id:'vodka', price:2.50, label:{es:'Vodka', fr:'Vodka', nl:'Wodka', en:'Vodka'} },
-  { id:'cafe', price:1.50, label:{es:'Café', fr:'Café', nl:'Koffie', en:'Coffee'} },
-  { id:'te', price:1.50, label:{es:'Té', fr:'Thé', nl:'Thee', en:'Tea'} },
-  { id:'chupito', price:1.00, label:{es:'Chupito', fr:'Shot', nl:'Shotje', en:'Shot'} }
-];
-const D = Object.fromEntries(DRINKS.map(d=>[d.key,d]));
+const langSel = document.getElementById('langSel');
+const t = (k)=> I18N[state.lang][k] || k;
 
-const money = n => (n||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2});
-// === IMPORTANTE: fecha local (no toISOString) para que coincida con los IDs YYYY-MM-DD guardados por el front ===
-const fmtLocal = (d)=>{ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; };
-const todayLocal = ()=>{const d=new Date(); d.setHours(0,0,0,0); return d;};
-const monthStart = ()=>{const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); return d;};
-
-const rangeSel = document.getElementById('rangeSel');
-const fromDate = document.getElementById('fromDate');
-const toDate   = document.getElementById('toDate');
-const reloadBtn= document.getElementById('reloadBtn');
-const msgBox   = document.getElementById('msg');
-
-function showMsg(text){ msgBox.textContent=text; msgBox.style.display='block'; }
-function clearMsg(){ msgBox.textContent=''; msgBox.style.display='none'; }
-
-function setRangeUI(){
-  const now=todayLocal(); fromDate.value = fmtLocal(now); toDate.value = fmtLocal(now);
-  fromDate.style.display = toDate.style.display = (rangeSel.value==='custom')?'inline-block':'none';
+function detectLang(){
+  const saved = localStorage.getItem('ab-lang');
+  if(saved) return saved;
+  const nav = (navigator.language||'').toLowerCase();
+  if(nav.startsWith('fr')) return 'fr';
+  if(nav.startsWith('nl')) return 'nl';
+  if(nav.startsWith('en')) return 'en';
+  return 'es';
 }
 
-rangeSel.addEventListener('change', ()=>{
-  clearMsg();
-  if(rangeSel.value==='today'){
-    const t=todayLocal(); fromDate.value=fmtLocal(t); toDate.value=fmtLocal(t);
-  }
-  if(rangeSel.value==='month'){
-    const s=monthStart(), e=todayLocal(); fromDate.value=fmtLocal(s); toDate.value=fmtLocal(e);
-  }
-  setRangeUI();
+/* ======== Catálogo de bebidas ========
+   Traducciones base + precios según la lista enviada.
+*/
+const DRINKS = [
+  { id:'agua',        price:1.00, label:{es:'Agua sin gas', fr:'Eau plate', nl:'Plat water', en:'Still water'} },
+  { id:'aguaGas',     price:1.00, label:{es:'Agua con gas', fr:'Eau gazeuse', nl:'Spuitwater', en:'Sparkling water'} },
+  { id:'coca',        price:1.50, label:{es:'Coca Cola', fr:'Coca-Cola', nl:'Coca-Cola', en:'Coca-Cola'} },
+  { id:'cocaz',       price:1.50, label:{es:'Coca Cola Zero', fr:'Coca-Cola Zéro', nl:'Coca-Cola Zero', en:'Coke Zero'} },
+  { id:'fantaN',      price:1.50, label:{es:'Fanta Naranja', fr:'Fanta Orange', nl:'Fanta Sinaas', en:'Fanta Orange'} },
+  { id:'fantaL',      price:1.50, label:{es:'Fanta Limón', fr:'Fanta Citron', nl:'Fanta Citroen', en:'Fanta Lemon'} },
+  { id:'nestea',      price:1.50, label:{es:'Nestea', fr:'Nestea', nl:'Nestea', en:'Nestea'} },
+  { id:'tonica',      price:1.50, label:{es:'Tónica', fr:'Tonic', nl:'Tonic', en:'Tonic'} },
+  { id:'bitter',      price:1.50, label:{es:'Bitter Kas', fr:'Bitter Kas', nl:'Bitter Kas', en:'Bitter Kas'} },
+  { id:'cerveza',     price:1.50, label:{es:'Cerveza', fr:'Bière', nl:'Bier', en:'Beer'} },
+  { id:'sinAlc',      price:1.50, label:{es:'Cerveza Sin Alcohol', fr:'Bière sans alcool', nl:'Alcoholvrij bier', en:'Alcohol-free beer'} },
+  { id:'leffe',       price:2.50, label:{es:'Leffe bl', fr:'Leffe Blonde', nl:'Leffe Blond', en:'Leffe Blonde'} },
+  { id:'duvel',       price:2.50, label:{es:'Duvel', fr:'Duvel', nl:'Duvel', en:'Duvel'} },
+  { id:'omer',        price:2.50, label:{es:'Omer', fr:'Omer', nl:'Omer', en:'Omer'} },
+  { id:'chimay',      price:3.00, label:{es:'Chimay Blauw', fr:'Chimay Bleue', nl:'Chimay Blauw', en:'Chimay Blue'} },
+  { id:'kriek',       price:2.50, label:{es:'Kriek', fr:'Kriek', nl:'Kriek', en:'Kriek'} },
+  { id:'vinoTinto',   price:7.50, label:{es:'Vino Tinto', fr:'Vin rouge', nl:'Rode wijn', en:'Red wine'} },
+  { id:'vinoBlanco',  price:7.50, label:{es:'Vino blanco', fr:'Vin blanc', nl:'Witte wijn', en:'White wine'} },
+  { id:'vinoRosado',  price:7.00, label:{es:'Vino Rosado', fr:'Vin rosé', nl:'Rosé wijn', en:'Rosé wine'} },
+  { id:'botellaVino', price:9.00, label:{es:'Botella vino', fr:'Bouteille de vin', nl:'Fles wijn', en:'Bottle of wine'} },
+  { id:'cavaPeq',     price:2.50, label:{es:'Cava pequeño', fr:'Cava petit', nl:'Kleine cava', en:'Small cava'} },
+  { id:'cavaGrande',  price:11.00,label:{es:'Cava Grande', fr:'Cava grande', nl:'Grote cava', en:'Large cava'} },
+  { id:'whisky',      price:2.50, label:{es:'Whisky', fr:'Whisky', nl:'Whisky', en:'Whisky'} },
+  { id:'cognac',      price:2.50, label:{es:'Cognac', fr:'Cognac', nl:'Cognac', en:'Cognac'} },
+  { id:'gin',         price:2.50, label:{es:'Gin', fr:'Gin', nl:'Gin', en:'Gin'} },
+  { id:'vodka',       price:2.50, label:{es:'Vodka', fr:'Vodka', nl:'Wodka', en:'Vodka'} },
+  { id:'cafe',        price:1.50, label:{es:'Café', fr:'Café', nl:'Koffie', en:'Coffee'} },
+  { id:'te',          price:1.50, label:{es:'Té', fr:'Thé', nl:'Thee', en:'Tea'} },
+  { id:'chupito',     price:1.00, label:{es:'Chupito', fr:'Shot', nl:'Shotje', en:'Shot'} }
+];
+
+// ======== Estado & UI ========
+const state = {
+  lang: detectLang(),
+  quantities: Object.fromEntries(DRINKS.map(d=>[d.id,0])),
+};
+
+const nameInput = document.getElementById('nameInput');
+const nameErr   = document.getElementById('nameErr');
+const orderErr  = document.getElementById('orderErr');
+const drinksEl  = document.getElementById('drinks');
+const totalAmountEl = document.getElementById('totalAmount');
+
+function renderDrinks(){
+  drinksEl.innerHTML = '';
+  DRINKS.forEach(d=>{
+    const card = document.createElement('div');
+    card.className = 'drink';
+    card.innerHTML = `
+      <h3>${d.label[state.lang]} — ${d.price.toFixed(2)} ${t('currency')}</h3>
+      <div class="qty">
+        <button class="btn-circle" data-id="${d.id}" data-delta="-1">−</button>
+        <input type="number" id="inp-${d.id}" min="0" value="${state.quantities[d.id]}" />
+        <button class="btn-circle" data-id="${d.id}" data-delta="1">+</button>
+      </div>
+    `;
+    drinksEl.appendChild(card);
+  });
+  // listeners
+  drinksEl.querySelectorAll('.btn-circle').forEach(b=>{
+    b.addEventListener('click', (e)=>{
+      const id = e.currentTarget.dataset.id;
+      const delta = parseInt(e.currentTarget.dataset.delta,10);
+      const next = Math.max(0, (state.quantities[id]||0) + delta);
+      state.quantities[id] = next;
+      document.getElementById('inp-'+id).value = next;
+      updateTotal();
+    });
+  });
+  DRINKS.forEach(d=>{
+    const inp = document.getElementById('inp-'+d.id);
+    inp.addEventListener('change', ()=>{
+      let v = parseInt(inp.value||'0',10);
+      if(isNaN(v) || v<0) v = 0;
+      state.quantities[d.id]=v;
+      inp.value = v;
+      updateTotal();
+    });
+  });
+}
+
+function updateTexts(){
+  document.getElementById('t-title').textContent   = t('title');
+  document.getElementById('t-language').textContent= t('language');
+  document.getElementById('t-yourname').textContent= t('yourname');
+  document.getElementById('t-drinks').textContent  = t('drinks');
+  document.getElementById('t-tap-to-add').textContent = t('tapToAdd');
+  document.getElementById('t-total').textContent   = t('total');
+  document.getElementById('sendBtn').textContent   = t('send');
+  document.getElementById('clearBtn').textContent  = t('clear');
+  document.getElementById('t-open-thu').textContent= t('openThu');
+  renderDrinks(); updateTotal();
+}
+
+function updateTotal(){
+  let sum = 0;
+  DRINKS.forEach(d=>{ sum += (state.quantities[d.id]||0) * d.price; });
+  const loc = state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES';
+  totalAmountEl.textContent = sum.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// Idioma
+langSel.value = state.lang;
+langSel.addEventListener('change', ()=>{
+  state.lang = langSel.value;
+  localStorage.setItem('ab-lang', state.lang);
+  updateTexts();
 });
 
-reloadBtn.addEventListener('click', load);
+// Botones
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  Object.keys(state.quantities).forEach(k=> state.quantities[k]=0);
+  renderDrinks(); updateTotal();
+  orderErr.style.display='none';
+});
 
-async function load(){
-  clearMsg();
-  // Rango
-  let start = fromDate.value, end = toDate.value;
-  if(rangeSel.value==='today'){ const t=fmtLocal(todayLocal()); start=end=t; }
-  if(rangeSel.value==='month'){ start=fmtLocal(monthStart()); end=fmtLocal(todayLocal()); }
-  if(!start || !end){ showMsg('Selecciona un rango válido.'); return; }
+document.getElementById('sendBtn').addEventListener('click', ()=>{
+  const name = (nameInput.value||'').trim();
+  const totalUnits = Object.values(state.quantities).reduce((a,b)=>a+(b||0),0);
+  nameErr.style.display  = name ? 'none':'block';
+  orderErr.style.display = totalUnits>0 ? 'none':'block';
+  if(!name || totalUnits===0) return;
 
-  // Construir lista de días (YYYY-MM-DD) usando local
-  const days = [];
-  let d = new Date(start + 'T00:00:00');
-  const last = new Date(end + 'T00:00:00');
-  while(d<=last){ days.push(fmtLocal(d)); d.setDate(d.getDate()+1); }
+  const order = {
+    name,
+    lang: state.lang,
+    createdAt: new Date().toISOString(),
+    items: Object.fromEntries(DRINKS
+      .filter(d=> (state.quantities[d.id]||0)>0)
+      .map(d=>[d.id,{qty:state.quantities[d.id], price:d.price, label:d.label[state.lang]}])
+    ),
+    total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0)
+  };
 
-  // Leer Firestore por día
-  const allRounds = [];
-  try{
-    for (const ds of days){
-      const qRef = query(collection(db,'days',ds,'rounds'), orderBy('createdAt','asc'));
-      const snap = await getDocs(qRef);
-      snap.forEach(doc=>{
-        const r=doc.data();
-        if(r.deleted) return;
-        allRounds.push({date: ds, ...r});
-      });
-    }
-  }catch(err){
-    console.error(err);
-    showMsg('Error leyendo Firestore. ¿Reglas de lectura? ¿Conexión?');
-    return;
-  }
+  localStorage.setItem('ab-last-order', JSON.stringify(order));
+  alert(({es:'Pedido preparado. En el próximo paso lo enviaremos al backend.',
+         fr:'Commande préparée. À l’étape suivante nous l’enverrons au backend.',
+         nl:'Bestelling klaar. In de volgende stap sturen we het naar de backend.',
+         en:'Order prepared. Next step we will send it to the backend.'})[state.lang]);
+});
 
-  if(allRounds.length===0){
-    showMsg('Sin datos en el rango seleccionado.');
-  } else {
-    clearMsg();
-  }
-
-  // Agregaciones
-  let totalUnits=0,totalAmount=0; const users=new Set();
-  const byUser = {}; const byDrink={}; const byDay={}; const rounds=[];
-  for(const r of allRounds){
-    let u=0,a=0;
-    for(const k of Object.keys(D)){
-      const q = r.items?.[k]||0;
-      u+=q; a+= q*D[k].price;
-      if(q>0){
-        byDrink[k] = byDrink[k]||{qty:0,amt:0};
-        byDrink[k].qty += q;
-        byDrink[k].amt += q*D[k].price;
-      }
-    }
-    totalUnits+=u; totalAmount+=a;
-    if(r.displayName) users.add(r.displayName);
-    const user = r.displayName||'¿?';
-    byUser[user] = byUser[user]||{qty:0,amt:0};
-    byUser[user].qty += u; byUser[user].amt += a;
-    byDay[r.date] = byDay[r.date]||{qty:0,amt:0};
-    byDay[r.date].qty += u; byDay[r.date].amt += a;
-    const ts = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
-    rounds.push({ date: r.date, time: ts.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), user, units:u, amount:a });
-  }
-
-  // KPIs
-  document.getElementById('kpiUnits').textContent = String(totalUnits);
-  document.getElementById('kpiAmount').textContent = money(totalAmount);
-  
-  
-
-  // Tablas
-  const tbodyUser = document.querySelector('#byUser tbody'); tbodyUser.innerHTML='';
-  Object.entries(byUser).sort((a,b)=>b[1].amt - a[1].amt).forEach(([name,v])=>{
-    const tr=document.createElement('tr'); tr.innerHTML=`<td>${name}</td><td>${v.qty}</td><td>${money(v.amt)}</td>`; tbodyUser.appendChild(tr);
-  });
-
-  const tbodyDrink = document.querySelector('#byDrink tbody'); tbodyDrink.innerHTML='';
-  Object.keys(D).forEach(k=>{ const v=byDrink[k]; if(!v) return; const tr=document.createElement('tr'); tr.innerHTML=`<td>${D[k].label}</td><td>${v.qty}</td><td>${money(v.amt)}</td>`; tbodyDrink.appendChild(tr); });
-
-  const tbodyDay = document.querySelector('#byDay tbody'); tbodyDay.innerHTML='';
-  Object.entries(byDay).sort(([da],[db])=> da<db ? -1: 1).forEach(([d,v])=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${d}</td><td>${v.qty}</td><td>${money(v.amt)}</td>`; tbodyDay.appendChild(tr); });
-
-  const tbodyRounds = document.querySelector('#rounds tbody'); tbodyRounds.innerHTML='';
-  rounds.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.date}</td><td>${r.time}</td><td>${r.user}</td><td>${r.units}</td><td>${money(r.amount)}</td>`; tbodyRounds.appendChild(tr); });
-
-  // Pie (€ por bebida)
-  const used = Object.entries(byDrink).map(([k,v])=>({key:k, ...v})).filter(x=>x.amt>0);
-  const svg=document.getElementById('pie'); svg.innerHTML='';
-  document.getElementById('legend').innerHTML='';
-  if(used.length){
-    const size=240,cx=120,cy=120,r=100; let acc=0; const total=used.reduce((s,x)=>s+x.amt,0);
-    used.forEach(x=>{
-      const frac=x.amt/total, ang=frac*2*Math.PI;
-      const x1=cx + r*Math.cos(acc), y1=cy + r*Math.sin(acc);
-      const acc2=acc+ang; const x2=cx + r*Math.cos(acc2), y2=cy + r*Math.sin(acc2);
-      const large= ang>Math.PI ? 1:0;
-      const path=`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
-      const color=D[x.key].color;
-      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-      p.setAttribute('d',path); p.setAttribute('fill',color); p.setAttribute('stroke','#fff'); p.setAttribute('stroke-width','2');
-      svg.appendChild(p);
-      acc=acc2;
-
-      const d = D[x.key];
-      const div=document.createElement('div');
-      div.className='legend-item';
-      div.innerHTML = `<span class="swatch" style="background:${color}"></span>${d.label}: <strong>${money(x.amt)} €</strong> (${x.qty} uds)`;
-      document.getElementById('legend').appendChild(div);
-    });
-  } else {
-    document.getElementById('legend').textContent='Sin consumo en el rango.';
-  }
-}
-
-// init rango = Este mes
-(function init(){
-  const s=monthStart(), e=todayLocal();
-  fromDate.value=fmtLocal(s); toDate.value=fmtLocal(e);
-  setRangeUI(); load();
-})();
-</script>
-<script>
-  (function(){
-    const root=document.documentElement; function apply(t){root.setAttribute('data-theme',t); localStorage.setItem('admin-theme',t); const b=document.getElementById('themeToggle'); if(b) b.textContent = t==='dark'?'☀️':'🌙';}
-    const saved=localStorage.getItem('admin-theme'); if(saved){apply(saved);} else { apply(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); }
-    window.addEventListener('DOMContentLoaded',()=>{ const b=document.getElementById('themeToggle'); b&&b.addEventListener('click',()=>{ apply(root.getAttribute('data-theme')==='dark'?'light':'dark'); }); });
-  })();
+// Init
+updateTexts();
 </script>
 </body>
 </html>
