@@ -6,9 +6,9 @@
 <title>Amistades Belgas — Admin</title>
 <meta name="color-scheme" content="light dark">
 <style>
-  :root{--bg:#f8fafc;--text:#0f172a;--muted:#64748b;--panel:#ffffff;--brd:#e5e7eb;--brd2:#d1d5db;--hover:#f1f5f9;--accent:#0ea5e9}
+  :root{--bg:#f8fafc;--text:#0f172a;--muted:#64748b;--panel:#ffffff;--brd:#e5e7eb;--brd2:#d1d5db;--hover:#f1f5f9;--accent:#0ea5e9;--ok:#dcfce7}
   @media (prefers-color-scheme: dark){
-    :root{--bg:#0b1220;--text:#e5e7eb;--muted:#9aa3af;--panel:#0f172a;--brd:#202938;--brd2:#263043;--hover:#101a2a;--accent:#38bdf8}
+    :root{--bg:#0b1220;--text:#e5e7eb;--muted:#9aa3af;--panel:#0f172a;--brd:#202938;--brd2:#263043;--hover:#101a2a;--accent:#38bdf8;--ok:#12331a}
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell}
@@ -21,8 +21,6 @@
   .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
   .kpi{background:var(--panel);border:1px solid var(--brd2);border-radius:10px;padding:10px}
   .kpi .v{font-size:20px;font-weight:700}
-  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:900px){.cards{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr 1fr}}
   .card{background:var(--panel);border:1px solid var(--brd2);border-radius:10px;overflow:hidden}
   .card h2{margin:0;padding:10px;border-bottom:1px solid var(--brd2);font-size:16px}
   table{width:100%;border-collapse:collapse}
@@ -33,7 +31,8 @@
   .msg{display:none;margin-bottom:10px;padding:10px;border:1px solid #ef4444;color:#7f1d1d;background:#fff0f0;border-radius:8px}
   @media (prefers-color-scheme: dark){.msg{border-color:#ef4444;color:#fecaca;background:#2a1515}}
   .btn-xs{padding:6px 8px;border-radius:6px}
-  /* --- detalle expandible --- */
+
+  /* detalle expandible */
   .items-pill{
     display:inline-block;padding:3px 8px;border:1px solid var(--brd2);
     border-radius:999px;font-size:12px;cursor:pointer;background:var(--panel);
@@ -44,6 +43,9 @@
   .detail-list{margin:0;padding-left:16px}
   .detail-list li{margin:2px 0}
   .mono{font-variant-numeric:tabular-nums}
+
+  /* completados en verde claro */
+  .completed-row{background:var(--ok)!important}
 </style>
 </head>
 <body>
@@ -72,37 +74,20 @@
     <div class="kpi"><div class="small" id="t-kpi-completed">Completados</div><div class="v" id="kpiCompleted">0</div></div>
   </div>
 
-  <div class="cards">
-    <div class="card">
-      <h2 id="t-pending">Pendientes</h2>
-      <table>
-        <thead>
-          <tr>
-            <th id="t-th-time">Hora</th>
-            <th id="t-th-name">Nombre</th>
-            <th id="t-th-items">Ítems</th>
-            <th class="right" id="t-th-total">Total</th>
-            <th id="t-th-actions">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="pendingBody"></tbody>
-      </table>
-    </div>
-    <div class="card">
-      <h2 id="t-completed">Completados</h2>
-      <table>
-        <thead>
-          <tr>
-            <th id="t-th-time2">Hora</th>
-            <th id="t-th-name2">Nombre</th>
-            <th id="t-th-items2">Ítems</th>
-            <th class="right" id="t-th-total2">Total</th>
-            <th id="t-th-actions2">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="completedBody"></tbody>
-      </table>
-    </div>
+  <div class="card">
+    <h2 id="t-all">Pedidos del día</h2>
+    <table>
+      <thead>
+        <tr>
+          <th id="t-th-time">Hora</th>
+          <th id="t-th-name">Nombre</th>
+          <th id="t-th-items">Ítems</th>
+          <th class="right" id="t-th-total">Total</th>
+          <th id="t-th-actions">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="ordersBody"></tbody>
+    </table>
   </div>
 </div>
 
@@ -111,25 +96,25 @@
 const I18N = {
   es:{title:"Amistades Belgas — Admin",language:"Idioma",day:"Día",reload:"Actualizar",
       kpiTotal:"Pedidos totales",kpiPending:"Pendientes",kpiCompleted:"Completados",
-      pending:"Pendientes",completed:"Completados",
+      all:"Pedidos del día",
       thTime:"Hora",thName:"Nombre",thItems:"Ítems",thTotal:"Total",thActions:"Acciones",
       markDone:"Marcar entregado", reopen:"Reabrir", none:"Sin pedidos",
       details:"Ver detalle", hide:"Ocultar", itemsCount:"{n} ítems", line:"{qty}× {label} · {price} €"},
   fr:{title:"Amistades Belgas — Admin",language:"Langue",day:"Jour",reload:"Actualiser",
       kpiTotal:"Commandes totales",kpiPending:"En attente",kpiCompleted:"Terminées",
-      pending:"En attente",completed:"Terminées",
+      all:"Commandes du jour",
       thTime:"Heure",thName:"Nom",thItems:"Articles",thTotal:"Total",thActions:"Actions",
       markDone:"Marquer livré", reopen:"Rouvrir", none:"Aucune commande",
       details:"Voir le détail", hide:"Masquer", itemsCount:"{n} articles", line:"{qty}× {label} · {price} €"},
   nl:{title:"Amistades Belgas — Admin",language:"Taal",day:"Dag",reload:"Vernieuwen",
       kpiTotal:"Bestellingen totaal",kpiPending:"In afwachting",kpiCompleted:"Afgerond",
-      pending:"In afwachting",completed:"Afgerond",
+      all:"Bestellingen van de dag",
       thTime:"Tijd",thName:"Naam",thItems:"Items",thTotal:"Totaal",thActions:"Acties",
       markDone:"Als geleverd markeren", reopen:"Heropenen", none:"Geen bestellingen",
       details:"Details bekijken", hide:"Verbergen", itemsCount:"{n} items", line:"{qty}× {label} · {price} €"},
   en:{title:"Amistades Belgas — Admin",language:"Language",day:"Day",reload:"Refresh",
       kpiTotal:"Total orders",kpiPending:"Pending",kpiCompleted:"Completed",
-      pending:"Pending",completed:"Completed",
+      all:"Orders of the day",
       thTime:"Time",thName:"Name",thItems:"Items",thTotal:"Total",thActions:"Actions",
       markDone:"Mark delivered", reopen:"Reopen", none:"No orders",
       details:"View details", hide:"Hide", itemsCount:"{n} items", line:"{qty}× {label} · {price} €"}
@@ -149,18 +134,12 @@ function applyTexts(){
   document.getElementById('t-kpi-total').textContent=t('kpiTotal');
   document.getElementById('t-kpi-pending').textContent=t('kpiPending');
   document.getElementById('t-kpi-completed').textContent=t('kpiCompleted');
-  document.getElementById('t-pending').textContent=t('pending');
-  document.getElementById('t-completed').textContent=t('completed');
+  document.getElementById('t-all').textContent=t('all');
   document.getElementById('t-th-time').textContent=t('thTime');
   document.getElementById('t-th-name').textContent=t('thName');
   document.getElementById('t-th-items').textContent=t('thItems');
   document.getElementById('t-th-total').textContent=t('thTotal');
   document.getElementById('t-th-actions').textContent=t('thActions');
-  document.getElementById('t-th-time2').textContent=t('thTime');
-  document.getElementById('t-th-name2').textContent=t('thName');
-  document.getElementById('t-th-items2').textContent=t('thItems');
-  document.getElementById('t-th-total2').textContent=t('thTotal');
-  document.getElementById('t-th-actions2').textContent=t('thActions');
 }
 
 /* ============ Firebase ============ */
@@ -183,11 +162,12 @@ const daySel = document.getElementById('daySel');
 const langSel = document.getElementById('langSel');
 const reloadBtn = document.getElementById('reloadBtn');
 const msg = document.getElementById('msg');
+const tbody = document.getElementById('ordersBody');
 
 function todayStr(){ const d=new Date(); d.setHours(0,0,0,0); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
 daySel.value = todayStr();
 
-langSel.addEventListener('change',()=>{ lang=langSel.value; applyTexts(); renderCurrent(); });
+langSel.addEventListener('change',()=>{ lang=langSel.value; localStorage.setItem('ab-admin-lang',lang); applyTexts(); renderCurrent(); });
 reloadBtn.addEventListener('click', ()=>{ renderCurrent(true); });
 
 let unsub = null;
@@ -220,34 +200,36 @@ function renderCurrent(force=false){
   // sin orderBy para evitar índice; ordenamos en cliente
   const q = query(col, where('day','==',day));
   unsub = onSnapshot(q, (snap)=>{
-    const pending=[], completed=[];
+    const all=[];
     snap.forEach(docSnap=>{
       const d=docSnap.data(); const id=docSnap.id;
-      if(d.status==='completed') completed.push({...d,id});
-      else pending.push({...d,id});
+      all.push({...d,id});
     });
 
-    // Orden por createdAt (cliente)
-    const toTs = (r) => r.createdAt?.toDate ? r.createdAt.toDate().getTime() : 0;
-    pending.sort((a,b)=> toTs(a)-toTs(b));
-    completed.sort((a,b)=> toTs(a)-toTs(b));
-
     // KPIs
-    document.getElementById('kpiTotal').textContent = String(pending.length+completed.length);
-    document.getElementById('kpiPending').textContent = String(pending.length);
-    document.getElementById('kpiCompleted').textContent = String(completed.length);
+    const pendingCount = all.filter(x=>x.status!=='completed').length;
+    const completedCount = all.length - pendingCount;
+    document.getElementById('kpiTotal').textContent = String(all.length);
+    document.getElementById('kpiPending').textContent = String(pendingCount);
+    document.getElementById('kpiCompleted').textContent = String(completedCount);
 
-    // Renders
-    drawTable('pendingBody', pending, true);
-    drawTable('completedBody', completed, false);
+    // Orden: primero pendientes por hora, luego completados por hora
+    const toTs = (r) => r.createdAt?.toDate ? r.createdAt.toDate().getTime() : 0;
+    all.sort((a,b)=>{
+      if((a.status==='completed') !== (b.status==='completed')){
+        return a.status==='completed' ? 1 : -1; // completed al final
+      }
+      return toTs(a)-toTs(b);
+    });
+
+    drawCombinedTable(all);
   }, (err)=>{
     console.error(err);
     msg.style.display='block'; msg.textContent = 'Error al leer Firestore. Revisa reglas o conexión.';
   });
 }
 
-function drawTable(tbodyId, rows, allowComplete){
-  const tbody = document.getElementById(tbodyId);
+function drawCombinedTable(rows){
   tbody.innerHTML='';
   if(rows.length===0){
     const tr=document.createElement('tr');
@@ -260,6 +242,7 @@ function drawTable(tbodyId, rows, allowComplete){
 
     // Fila principal
     const tr=document.createElement('tr');
+    if(r.status==='completed') tr.classList.add('completed-row');
     tr.innerHTML = `
       <td>${hh}</td>
       <td>${r.name||''}</td>
@@ -270,9 +253,9 @@ function drawTable(tbodyId, rows, allowComplete){
       </td>
       <td class="right">${money(r.total)}</td>
       <td>
-        ${allowComplete
-          ? `<button class="btn-xs" data-act="done" data-id="${r.id}">${t('markDone')}</button>`
-          : `<button class="btn-xs" data-act="reopen" data-id="${r.id}">${t('reopen')}</button>`
+        ${r.status==='completed'
+          ? `<button class="btn-xs" data-act="reopen" data-id="${r.id}">${t('reopen')}</button>`
+          : `<button class="btn-xs" data-act="done" data-id="${r.id}">${t('markDone')}</button>`
         }
       </td>
     `;
@@ -301,8 +284,9 @@ function drawTable(tbodyId, rows, allowComplete){
         const open = row.style.display !== 'none';
         row.style.display = open ? 'none' : '';
         btn.classList.toggle('open', !open);
-        btn.textContent = (open ? (itemsCount(rows.find(x=>x.id===id)?.items) + ' · ' + t('details'))
-                                : (itemsCount(rows.find(x=>x.id===id)?.items) + ' · ' + t('hide')));
+        // mantener el contador visible en el texto
+        const base = btn.textContent.split('·')[0].trim();
+        btn.textContent = `${base} · ${open ? t('details') : t('hide')}`;
         return;
       }
       try{
@@ -312,6 +296,7 @@ function drawTable(tbodyId, rows, allowComplete){
         }else if(act==='reopen'){
           await updateDoc(ref,{ status:'pending', completedAt: null });
         }
+        // El onSnapshot reordenará y repintará; no hace falta tocar DOM aquí.
       }catch(e){
         console.error(e);
         alert('No se pudo actualizar el estado. Revisa reglas de Firestore.');
