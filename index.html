@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jayena – Admin</title>
+  <style>
+    :root{--bg:#f7f7fb;--panel:#fff;--muted:#6b7280;--text:#111827;--accent:#0ea5e9;--brd:rgba(17,24,39,.12)}
+    [data-theme="dark"]{--bg:#0f172a;--panel:#0b1220;--muted:#9ca3af;--text:#e5e7eb;--accent:#38bdf8;--brd:rgba(255,255,255,.15)}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell; background:var(--bg);color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .card{background:var(--panel);border:1px solid var(--brd);border-radius:14px;padding:12px}
+    .grid{display:grid;gap:12px}
+    .grid.cols-2{grid-template-columns:1.2fr .8fr}
+    @media(max-width:700px){.grid.cols-2{grid-template-columns:1fr}}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    select,input,button{padding:8px 10px;border:1px solid var(--brd);border-radius:10px;background:#fff;color:var(--text)}
+    [data-theme="dark"] select,[data-theme="dark"] input,[data-theme="dark"] button{background:#0f172a;color:var(--text)}
+    button{cursor:pointer;font-weight:600}
+    h1{margin:0;font-size:20px}
+    h2{margin:8px 0 4px 0;font-size:18px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{border-top:1px solid var(--brd);padding:8px;text-align:left}
+    th{font-weight:700}
+    .muted{color:var(--muted)}
+    .pill{background:rgba(56,189,248,.12);border:1px dashed rgba(56,189,248,.35);color:var(--accent);padding:4px 8px;border-radius:999px;font-size:12px}
+    .totals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .kpi{background:var(--panel);border:1px solid var(--brd);border-radius:12px;padding:10px}
+    .kpi strong{font-size:18px}
+    .chart{width:100%;max-width:520px}
+    #msg{display:none;margin-bottom:10px;padding:10px;border-radius:10px;background:#fff0f0;border:1px solid rgba(239,68,68,.35);color:#7f1d1d}
+    [data-theme="dark"] #msg{background:#2c1a1a;border-color:#7f1d1d;color:#fecaca}
+    /* Leyenda de colores para el pie */
+    #legend{display:grid;gap:6px;margin-top:6px}
+    .legend-item{display:flex;align-items:center;gap:8px;font-size:14px}
+    .legend-item .swatch{width:12px;height:12px;border-radius:3px;border:1px solid var(--brd)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="row">
+      <h1>Jayena – Panel Admin</h1>
+      <span class="pill">solo lectura</span>
+    </div>
+    <div class="row">
+      <select id="rangeSel">
+        <option value="today">Hoy</option>
+        <option value="month" selected>Este mes</option>
+        <option value="custom">Personalizado…</option>
+      </select>
+      <input id="fromDate" type="date" style="display:none"/>
+      <input id="toDate" type="date" style="display:none"/>
+      <button id="reloadBtn">Actualizar</button>
+    </div>
+      <div class="row">
+      <button id="themeToggle" title="Cambiar tema">🌙</button>
+    </div>
+  </header>
+
+  <div id="msg"></div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <h2>Resumen</h2>
+      <div class="totals">
+        <div class="kpi"><div class="muted">Unidades totales</div><strong id="kpiUnits">0</strong></div>
+        <div class="kpi"><div class="muted">Importe total (€)</div><strong id="kpiAmount">0,00</strong></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Por bebida (€)</h2>
+      <div class="row">
+        <svg id="pie" class="chart" viewBox="0 0 240 240"></svg>
+      </div>
+      <div id="legend" class="muted" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:12px">
+    <div class="card">
+      <h2>Por usuario</h2>
+      <table id="byUser"><thead><tr><th>Usuario</th><th>Unidades</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>Por bebida</h2>
+      <table id="byDrink"><thead><tr><th>Bebida</th><th>Unidades</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>Por día</h2>
+      <table id="byDay"><thead><tr><th>Fecha</th><th>Unidades</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>Rondas (detalle)</h2>
+      <table id="rounds"><thead><tr><th>Fecha</th><th>Hora</th><th>Usuario</th><th>Unid.</th><th>Importe (€)</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD1EW9ARFqGsxxd0Ska4GiItKERayouuVs",
+  authDomain: "jayena-drinks.firebaseapp.com",
+  projectId: "jayena-drinks",
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// catálogo bebidas + precios (igual que el front)
+const DRINKS = [
+  { id:'agua', price:1.00, label:{es:'Agua sin gas', fr:'Eau plate', nl:'Plat water', en:'Still water'} },
+  { id:'aguaGas', price:1.00, label:{es:'Agua con gas', fr:'Eau gazeuse', nl:'Spuitwater', en:'Sparkling water'} },
+  { id:'coca', price:1.50, label:{es:'Coca Cola', fr:'Coca-Cola', nl:'Coca-Cola', en:'Coca-Cola'} },
+  { id:'cocaz', price:1.50, label:{es:'Coca Cola Zero', fr:'Coca-Cola Zéro', nl:'Coca-Cola Zero', en:'Coke Zero'} },
+  { id:'fantaN', price:1.50, label:{es:'Fanta Naranja', fr:'Fanta Orange', nl:'Fanta Sinaas', en:'Fanta Orange'} },
+  { id:'fantaL', price:1.50, label:{es:'Fanta Limón', fr:'Fanta Citron', nl:'Fanta Citroen', en:'Fanta Lemon'} },
+  { id:'nestea', price:1.50, label:{es:'Nestea', fr:'Nestea', nl:'Nestea', en:'Nestea'} },
+  { id:'tonica', price:1.50, label:{es:'Tónica', fr:'Tonic', nl:'Tonic', en:'Tonic'} },
+  { id:'bitter', price:1.50, label:{es:'Bitter Kas', fr:'Bitter Kas', nl:'Bitter Kas', en:'Bitter Kas'} },
+  { id:'cerveza', price:1.50, label:{es:'Cerveza', fr:'Bière', nl:'Bier', en:'Beer'} },
+  { id:'sinAlc', price:1.50, label:{es:'Cerveza Sin Alcohol', fr:'Bière sans alcool', nl:'Alcoholvrij bier', en:'Alcohol-free beer'} },
+  { id:'leffe', price:2.50, label:{es:'Leffe bl', fr:'Leffe Blonde', nl:'Leffe Blond', en:'Leffe Blonde'} },
+  { id:'duvel', price:2.50, label:{es:'Duvel', fr:'Duvel', nl:'Duvel', en:'Duvel'} },
+  { id:'omer', price:2.50, label:{es:'Omer', fr:'Omer', nl:'Omer', en:'Omer'} },
+  { id:'chimay', price:3.00, label:{es:'Chimay Blauw', fr:'Chimay Bleue', nl:'Chimay Blauw', en:'Chimay Blue'} },
+  { id:'kriek', price:2.50, label:{es:'Kriek', fr:'Kriek', nl:'Kriek', en:'Kriek'} },
+  { id:'vinoTinto', price:7.50, label:{es:'Vino Tinto', fr:'Vin rouge', nl:'Rode wijn', en:'Red wine'} },
+  { id:'vinoBlanco', price:7.50, label:{es:'Vino blanco', fr:'Vin blanc', nl:'Witte wijn', en:'White wine'} },
+  { id:'vinoRosado', price:7.00, label:{es:'Vino Rosado', fr:'Vin rosé', nl:'Rosé wijn', en:'Rosé wine'} },
+  { id:'botellaVino', price:9.00, label:{es:'Botella vino', fr:'Bouteille de vin', nl:'Fles wijn', en:'Bottle of wine'} },
+  { id:'cavaPeq', price:2.50, label:{es:'Cava pequeño', fr:'Cava petit', nl:'Kleine cava', en:'Small cava'} },
+  { id:'cavaGrande', price:11.00, label:{es:'Cava Grande', fr:'Cava grande', nl:'Grote cava', en:'Large cava'} },
+  { id:'whisky', price:2.50, label:{es:'Whisky', fr:'Whisky', nl:'Whisky', en:'Whisky'} },
+  { id:'cognac', price:2.50, label:{es:'Cognac', fr:'Cognac', nl:'Cognac', en:'Cognac'} },
+  { id:'gin', price:2.50, label:{es:'Gin', fr:'Gin', nl:'Gin', en:'Gin'} },
+  { id:'vodka', price:2.50, label:{es:'Vodka', fr:'Vodka', nl:'Wodka', en:'Vodka'} },
+  { id:'cafe', price:1.50, label:{es:'Café', fr:'Café', nl:'Koffie', en:'Coffee'} },
+  { id:'te', price:1.50, label:{es:'Té', fr:'Thé', nl:'Thee', en:'Tea'} },
+  { id:'chupito', price:1.00, label:{es:'Chupito', fr:'Shot', nl:'Shotje', en:'Shot'} }
+];
+const D = Object.fromEntries(DRINKS.map(d=>[d.key,d]));
+
+const money = n => (n||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2});
+// === IMPORTANTE: fecha local (no toISOString) para que coincida con los IDs YYYY-MM-DD guardados por el front ===
+const fmtLocal = (d)=>{ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; };
+const todayLocal = ()=>{const d=new Date(); d.setHours(0,0,0,0); return d;};
+const monthStart = ()=>{const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); return d;};
+
+const rangeSel = document.getElementById('rangeSel');
+const fromDate = document.getElementById('fromDate');
+const toDate   = document.getElementById('toDate');
+const reloadBtn= document.getElementById('reloadBtn');
+const msgBox   = document.getElementById('msg');
+
+function showMsg(text){ msgBox.textContent=text; msgBox.style.display='block'; }
+function clearMsg(){ msgBox.textContent=''; msgBox.style.display='none'; }
+
+function setRangeUI(){
+  const now=todayLocal(); fromDate.value = fmtLocal(now); toDate.value = fmtLocal(now);
+  fromDate.style.display = toDate.style.display = (rangeSel.value==='custom')?'inline-block':'none';
+}
+
+rangeSel.addEventListener('change', ()=>{
+  clearMsg();
+  if(rangeSel.value==='today'){
+    const t=todayLocal(); fromDate.value=fmtLocal(t); toDate.value=fmtLocal(t);
+  }
+  if(rangeSel.value==='month'){
+    const s=monthStart(), e=todayLocal(); fromDate.value=fmtLocal(s); toDate.value=fmtLocal(e);
+  }
+  setRangeUI();
+});
+
+reloadBtn.addEventListener('click', load);
+
+async function load(){
+  clearMsg();
+  // Rango
+  let start = fromDate.value, end = toDate.value;
+  if(rangeSel.value==='today'){ const t=fmtLocal(todayLocal()); start=end=t; }
+  if(rangeSel.value==='month'){ start=fmtLocal(monthStart()); end=fmtLocal(todayLocal()); }
+  if(!start || !end){ showMsg('Selecciona un rango válido.'); return; }
+
+  // Construir lista de días (YYYY-MM-DD) usando local
+  const days = [];
+  let d = new Date(start + 'T00:00:00');
+  const last = new Date(end + 'T00:00:00');
+  while(d<=last){ days.push(fmtLocal(d)); d.setDate(d.getDate()+1); }
+
+  // Leer Firestore por día
+  const allRounds = [];
+  try{
+    for (const ds of days){
+      const qRef = query(collection(db,'days',ds,'rounds'), orderBy('createdAt','asc'));
+      const snap = await getDocs(qRef);
+      snap.forEach(doc=>{
+        const r=doc.data();
+        if(r.deleted) return;
+        allRounds.push({date: ds, ...r});
+      });
+    }
+  }catch(err){
+    console.error(err);
+    showMsg('Error leyendo Firestore. ¿Reglas de lectura? ¿Conexión?');
+    return;
+  }
+
+  if(allRounds.length===0){
+    showMsg('Sin datos en el rango seleccionado.');
+  } else {
+    clearMsg();
+  }
+
+  // Agregaciones
+  let totalUnits=0,totalAmount=0; const users=new Set();
+  const byUser = {}; const byDrink={}; const byDay={}; const rounds=[];
+  for(const r of allRounds){
+    let u=0,a=0;
+    for(const k of Object.keys(D)){
+      const q = r.items?.[k]||0;
+      u+=q; a+= q*D[k].price;
+      if(q>0){
+        byDrink[k] = byDrink[k]||{qty:0,amt:0};
+        byDrink[k].qty += q;
+        byDrink[k].amt += q*D[k].price;
+      }
+    }
+    totalUnits+=u; totalAmount+=a;
+    if(r.displayName) users.add(r.displayName);
+    const user = r.displayName||'¿?';
+    byUser[user] = byUser[user]||{qty:0,amt:0};
+    byUser[user].qty += u; byUser[user].amt += a;
+    byDay[r.date] = byDay[r.date]||{qty:0,amt:0};
+    byDay[r.date].qty += u; byDay[r.date].amt += a;
+    const ts = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
+    rounds.push({ date: r.date, time: ts.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), user, units:u, amount:a });
+  }
+
+  // KPIs
+  document.getElementById('kpiUnits').textContent = String(totalUnits);
+  document.getElementById('kpiAmount').textContent = money(totalAmount);
+  
+  
+
+  // Tablas
+  const tbodyUser = document.querySelector('#byUser tbody'); tbodyUser.innerHTML='';
+  Object.entries(byUser).sort((a,b)=>b[1].amt - a[1].amt).forEach(([name,v])=>{
+    const tr=document.createElement('tr'); tr.innerHTML=`<td>${name}</td><td>${v.qty}</td><td>${money(v.amt)}</td>`; tbodyUser.appendChild(tr);
+  });
+
+  const tbodyDrink = document.querySelector('#byDrink tbody'); tbodyDrink.innerHTML='';
+  Object.keys(D).forEach(k=>{ const v=byDrink[k]; if(!v) return; const tr=document.createElement('tr'); tr.innerHTML=`<td>${D[k].label}</td><td>${v.qty}</td><td>${money(v.amt)}</td>`; tbodyDrink.appendChild(tr); });
+
+  const tbodyDay = document.querySelector('#byDay tbody'); tbodyDay.innerHTML='';
+  Object.entries(byDay).sort(([da],[db])=> da<db ? -1: 1).forEach(([d,v])=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${d}</td><td>${v.qty}</td><td>${money(v.amt)}</td>`; tbodyDay.appendChild(tr); });
+
+  const tbodyRounds = document.querySelector('#rounds tbody'); tbodyRounds.innerHTML='';
+  rounds.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.date}</td><td>${r.time}</td><td>${r.user}</td><td>${r.units}</td><td>${money(r.amount)}</td>`; tbodyRounds.appendChild(tr); });
+
+  // Pie (€ por bebida)
+  const used = Object.entries(byDrink).map(([k,v])=>({key:k, ...v})).filter(x=>x.amt>0);
+  const svg=document.getElementById('pie'); svg.innerHTML='';
+  document.getElementById('legend').innerHTML='';
+  if(used.length){
+    const size=240,cx=120,cy=120,r=100; let acc=0; const total=used.reduce((s,x)=>s+x.amt,0);
+    used.forEach(x=>{
+      const frac=x.amt/total, ang=frac*2*Math.PI;
+      const x1=cx + r*Math.cos(acc), y1=cy + r*Math.sin(acc);
+      const acc2=acc+ang; const x2=cx + r*Math.cos(acc2), y2=cy + r*Math.sin(acc2);
+      const large= ang>Math.PI ? 1:0;
+      const path=`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+      const color=D[x.key].color;
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d',path); p.setAttribute('fill',color); p.setAttribute('stroke','#fff'); p.setAttribute('stroke-width','2');
+      svg.appendChild(p);
+      acc=acc2;
+
+      const d = D[x.key];
+      const div=document.createElement('div');
+      div.className='legend-item';
+      div.innerHTML = `<span class="swatch" style="background:${color}"></span>${d.label}: <strong>${money(x.amt)} €</strong> (${x.qty} uds)`;
+      document.getElementById('legend').appendChild(div);
+    });
+  } else {
+    document.getElementById('legend').textContent='Sin consumo en el rango.';
+  }
+}
+
+// init rango = Este mes
+(function init(){
+  const s=monthStart(), e=todayLocal();
+  fromDate.value=fmtLocal(s); toDate.value=fmtLocal(e);
+  setRangeUI(); load();
+})();
+</script>
+<script>
+  (function(){
+    const root=document.documentElement; function apply(t){root.setAttribute('data-theme',t); localStorage.setItem('admin-theme',t); const b=document.getElementById('themeToggle'); if(b) b.textContent = t==='dark'?'☀️':'🌙';}
+    const saved=localStorage.getItem('admin-theme'); if(saved){apply(saved);} else { apply(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); }
+    window.addEventListener('DOMContentLoaded',()=>{ const b=document.getElementById('themeToggle'); b&&b.addEventListener('click',()=>{ apply(root.getAttribute('data-theme')==='dark'?'light':'dark'); }); });
+  })();
+</script>
+</body>
+</html>
