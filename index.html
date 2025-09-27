@@ -45,6 +45,35 @@
     .error{color:#b91c1c;font-size:13px;margin-top:6px;display:none}
   </style>
 </head>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzb1g7DOGluAfcvyWushkkqcHawh2FHaM",
+    authDomain: "amistades-belgas.firebaseapp.com",
+    projectId: "amistades-belgas",
+    storageBucket: "amistades-belgas.firebasestorage.app",
+    messagingSenderId: "897458358699",
+    appId: "1:897458358699:web:842a5f29287e230ab02aee"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // Exponemos una función global para enviar pedidos desde tu script existente
+  window.abSendOrder = async (order) => {
+    const payload = {
+      ...order,
+      status: 'pending',                       // pendiente (el backend luego lo marcará delivered/completed)
+      createdAt: serverTimestamp(),            // timestamp del servidor
+      day: new Date().toISOString().slice(0,10) // YYYY-MM-DD (útil para listados por día/jueves)
+    };
+    const ref = await addDoc(collection(db, 'orders'), payload);
+    return ref.id;
+  };
+</script>
+
 <body>
   <div class="wrap">
     <header>
