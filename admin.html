@@ -183,7 +183,7 @@ function renderCurrent(force=false){
   msg.style.display='none';
 
   const col = collection(db,'orders');
-  const q = query(col, where('day','==',day), orderBy('createdAt','asc'));
+  const q = query(col, where('day','==',day)); // sin orderBy para evitar índice
   unsub = onSnapshot(q, (snap)=>{
     const pending=[], completed=[];
     snap.forEach(docSnap=>{
@@ -191,10 +191,20 @@ function renderCurrent(force=false){
       if(d.status==='completed') completed.push({...d,id});
       else pending.push({...d,id});
     });
-    // KPIs
-    document.getElementById('kpiTotal').textContent = String(pending.length+completed.length);
-    document.getElementById('kpiPending').textContent = String(pending.length);
-    document.getElementById('kpiCompleted').textContent = String(completed.length);
+    // Ordenar por createdAt asc (cliente)
+const toTs = (r) => r.createdAt?.toDate ? r.createdAt.toDate().getTime() : 0;
+pending.sort((a,b)=> toTs(a)-toTs(b));
+completed.sort((a,b)=> toTs(a)-toTs(b));
+
+  // KPIs
+document.getElementById('kpiTotal').textContent = String(pending.length+completed.length);
+document.getElementById('kpiPending').textContent = String(pending.length);
+document.getElementById('kpiCompleted').textContent = String(completed.length);
+
+// Tablas
+drawTable('pendingBody', pending, true);
+drawTable('completedBody', completed, false);
+
     // Renders
     drawTable('pendingBody', pending, true);
     drawTable('completedBody', completed, false);
