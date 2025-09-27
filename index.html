@@ -301,12 +301,43 @@ document.getElementById('sendBtn').addEventListener('click', ()=>{
              .map(d=>[d.id,{qty:state.quantities[d.id], price:d.price, label:d.label[state.lang]}])),
     total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0)
   };
+ document.getElementById('sendBtn').addEventListener('click', async ()=>{
+  const name=(nameInput.value||'').trim();
+  const totalUnits = Object.values(state.quantities).reduce((a,b)=>a+(b||0),0);
+  nameErr.style.display  = name ? 'none':'block';
+  orderErr.style.display = totalUnits>0 ? 'none':'block';
+  if(!name || totalUnits===0) return;
+
+  const order = {
+    name, lang: state.lang, createdAt: new Date().toISOString(),
+    items: Object.fromEntries(DRINKS.filter(d=> (state.quantities[d.id]||0)>0)
+             .map(d=>[d.id,{qty:state.quantities[d.id], price:d.price, label:d.label[state.lang]}])),
+    total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0)
+  };
+
+  // Guarda una copia local (opcional)
   localStorage.setItem('ab-last-order', JSON.stringify(order));
-  alert(({es:'Pedido preparado. En el próximo paso lo enviaremos al backend.',
-         fr:'Commande préparée. À l’étape suivante nous l’enverrons au backend.',
-         nl:'Bestelling klaar. In de volgende stap sturen we het naar de backend.',
-         en:'Order prepared. Next step we will send it to the backend.'})[state.lang]);
+
+  try {
+    const docId = await window.abSendOrder(order); // <-- Firestore
+    // Feedback al usuario
+    alert(({es:`Pedido enviado (ID: ${docId}).`,
+            fr:`Commande envoyée (ID : ${docId}).`,
+            nl:`Bestelling verzonden (ID: ${docId}).`,
+            en:`Order sent (ID: ${docId}).`})[state.lang]);
+
+    // Reset cantidades tras enviar
+    for(const k of Object.keys(state.quantities)) state.quantities[k]=0;
+    renderTable();
+  } catch (e) {
+    console.error(e);
+    alert(({es:'No se pudo enviar el pedido. Reintenta.',
+            fr:'Impossible d’envoyer la commande. Réessayez.',
+            nl:'Bestelling kon niet worden verzonden. Probeer opnieuw.',
+            en:'Could not send order. Please try again.'})[state.lang]);
+  }
 });
+
 
 /* ===== Init ===== */
 applyTexts();
