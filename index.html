@@ -45,35 +45,6 @@
     .error{color:#b91c1c;font-size:13px;margin-top:6px;display:none}
   </style>
 </head>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAzb1g7DOGluAfcvyWushkkqcHawh2FHaM",
-    authDomain: "amistades-belgas.firebaseapp.com",
-    projectId: "amistades-belgas",
-    storageBucket: "amistades-belgas.firebasestorage.app",
-    messagingSenderId: "897458358699",
-    appId: "1:897458358699:web:842a5f29287e230ab02aee"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-
-  // Exponemos una función global para enviar pedidos desde tu script existente
-  window.abSendOrder = async (order) => {
-    const payload = {
-      ...order,
-      status: 'pending',                       // pendiente (el backend luego lo marcará delivered/completed)
-      createdAt: serverTimestamp(),            // timestamp del servidor
-      day: new Date().toISOString().slice(0,10) // YYYY-MM-DD (útil para listados por día/jueves)
-    };
-    const ref = await addDoc(collection(db, 'orders'), payload);
-    return ref.id;
-  };
-</script>
-
 <body>
   <div class="wrap">
     <header>
@@ -127,8 +98,8 @@
     </div>
   </div>
 
+<!-- ======= FRONTEND (UI + lógica) ======= -->
 <script>
-/* ===== i18n ===== */
 const I18N = {
   es:{title:"Amistades Belgas — Pedido",language:"Idioma",yourname:"Tu nombre",
       drinkCol:"Bebida",priceCol:"Precio",qtyCol:"Cantidad",subCol:"Subtotal",
@@ -165,7 +136,6 @@ const state = { lang: detectLang(), quantities:{} };
 const t = k => I18N[state.lang][k]||k;
 const langSel = document.getElementById('langSel');
 
-/* ===== Catálogo de bebidas (de tu lista) ===== */
 const DRINKS = [
   { id:'agua',        price:1.00, label:{es:'Agua sin gas', fr:'Eau plate', nl:'Plat water', en:'Still water'} },
   { id:'aguaGas',     price:1.00, label:{es:'Agua con gas', fr:'Eau gazeuse', nl:'Spuitwater', en:'Sparkling water'} },
@@ -204,16 +174,32 @@ const nameInput = document.getElementById('nameInput');
 const nameErr = document.getElementById('nameErr');
 const orderErr = document.getElementById('orderErr');
 
-/* ===== Render tabla estilo Excel ===== */
+function locale(){ return state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES'; }
+
+function lineSubtotal(d){ return (state.quantities[d.id]||0) * d.price; }
+
+function setQty(id, v){
+  state.quantities[id]=v;
+  const inp=document.getElementById('inp-'+id); if(inp) inp.value=v;
+  const d = DRINKS.find(x=>x.id===id);
+  const sub = document.getElementById('sub-'+id);
+  if(sub && d) sub.textContent = `${lineSubtotal(d).toLocaleString(locale(),{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}`;
+  updateTotals();
+}
+
+function updateTotals(){
+  const total = DRINKS.reduce((s,d)=> s + lineSubtotal(d), 0);
+  totalEl.textContent = total.toLocaleString(locale(),{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
 function renderTable(){
   rowsEl.innerHTML = '';
-  const loc = state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES';
   DRINKS.forEach(d=>{
     if(state.quantities[d.id]===undefined) state.quantities[d.id]=0;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="col-name">${d.label[state.lang]}</td>
-      <td class="col-price">${d.price.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
+      <td class="col-price">${d.price.toLocaleString(locale(),{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
       <td class="col-qty">
         <div class="qty-wrap">
           <button class="btn-circle" data-id="${d.id}" data-delta="-1">−</button>
@@ -221,11 +207,10 @@ function renderTable(){
           <button class="btn-circle" data-id="${d.id}" data-delta="1">+</button>
         </div>
       </td>
-      <td class="col-sub" id="sub-${d.id}">${lineSubtotal(d).toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
+      <td class="col-sub" id="sub-${d.id}">${lineSubtotal(d).toLocaleString(locale(),{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
     `;
     rowsEl.appendChild(tr);
   });
-  // listeners por fila
   rowsEl.querySelectorAll('.btn-circle').forEach(b=>{
     b.addEventListener('click', e=>{
       const id=e.currentTarget.dataset.id;
@@ -242,23 +227,7 @@ function renderTable(){
   });
   updateTotals();
 }
-function lineSubtotal(d){ return (state.quantities[d.id]||0) * d.price; }
-function setQty(id, v){
-  const loc = state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES';
-  state.quantities[id]=v;
-  const inp=document.getElementById('inp-'+id); if(inp) inp.value=v;
-  const d = DRINKS.find(x=>x.id===id);
-  const sub = document.getElementById('sub-'+id);
-  if(sub && d) sub.textContent = `${lineSubtotal(d).toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}`;
-  updateTotals();
-}
-function updateTotals(){
-  const loc = state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES';
-  const total = DRINKS.reduce((s,d)=> s + lineSubtotal(d), 0);
-  totalEl.textContent = total.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});
-}
 
-/* ===== Textos ===== */
 function applyTexts(){
   document.getElementById('t-title').textContent = t('title');
   document.getElementById('t-language').textContent = t('language');
@@ -273,7 +242,6 @@ function applyTexts(){
   document.getElementById('clearBtn').textContent    = t('clear');
 }
 
-/* ===== Eventos ===== */
 langSel.value = state.lang;
 langSel.addEventListener('change', ()=>{
   state.lang = langSel.value;
@@ -288,20 +256,7 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
   orderErr.style.display='none';
 });
 
-document.getElementById('sendBtn').addEventListener('click', ()=>{
-  const name=(nameInput.value||'').trim();
-  const totalUnits = Object.values(state.quantities).reduce((a,b)=>a+(b||0),0);
-  nameErr.style.display  = name ? 'none':'block';
-  orderErr.style.display = totalUnits>0 ? 'none':'block';
-  if(!name || totalUnits===0) return;
-
-  const order = {
-    name, lang: state.lang, createdAt: new Date().toISOString(),
-    items: Object.fromEntries(DRINKS.filter(d=> (state.quantities[d.id]||0)>0)
-             .map(d=>[d.id,{qty:state.quantities[d.id], price:d.price, label:d.label[state.lang]}])),
-    total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0)
-  };
- document.getElementById('sendBtn').addEventListener('click', async ()=>{
+document.getElementById('sendBtn').addEventListener('click', async ()=>{
   const name=(nameInput.value||'').trim();
   const totalUnits = Object.values(state.quantities).reduce((a,b)=>a+(b||0),0);
   nameErr.style.display  = name ? 'none':'block';
@@ -315,21 +270,17 @@ document.getElementById('sendBtn').addEventListener('click', ()=>{
     total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0)
   };
 
-  // Guarda una copia local (opcional)
   localStorage.setItem('ab-last-order', JSON.stringify(order));
 
   try {
-    const docId = await window.abSendOrder(order); // <-- Firestore
-    // Feedback al usuario
+    const docId = await (window.abSendOrder ? window.abSendOrder(order) : Promise.reject(new Error('Firestore no inicializado')));
     alert(({es:`Pedido enviado (ID: ${docId}).`,
             fr:`Commande envoyée (ID : ${docId}).`,
             nl:`Bestelling verzonden (ID: ${docId}).`,
             en:`Order sent (ID: ${docId}).`})[state.lang]);
-
-    // Reset cantidades tras enviar
     for(const k of Object.keys(state.quantities)) state.quantities[k]=0;
     renderTable();
-  } catch (e) {
+  } catch(e) {
     console.error(e);
     alert(({es:'No se pudo enviar el pedido. Reintenta.',
             fr:'Impossible d’envoyer la commande. Réessayez.',
@@ -338,10 +289,38 @@ document.getElementById('sendBtn').addEventListener('click', ()=>{
   }
 });
 
-
-/* ===== Init ===== */
 applyTexts();
 renderTable();
+</script>
+
+<!-- ======= FIREBASE (módulo separado) ======= -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzb1g7DOGluAfcvyWushkkqcHawh2FHaM",
+    authDomain: "amistades-belgas.firebaseapp.com",
+    projectId: "amistades-belgas",
+    storageBucket: "amistades-belgas.firebasestorage.app",
+    messagingSenderId: "897458358699",
+    appId: "1:897458358699:web:842a5f29287e230ab02aee"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // Función global para que el script no-modular pueda enviar el pedido
+  window.abSendOrder = async (order) => {
+    const payload = {
+      ...order,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      day: new Date().toISOString().slice(0,10)
+    };
+    const ref = await addDoc(collection(db, 'orders'), payload);
+    return ref.id;
+  };
 </script>
 </body>
 </html>
