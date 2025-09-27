@@ -3,52 +3,53 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Amistades Belgas — Pedido de bebidas</title>
+  <title>Amistades Belgas — Pedido</title>
   <meta name="color-scheme" content="light dark">
   <style>
     :root{
-      --bg:#f6f7fb; --panel:#fff; --text:#0f172a; --muted:#6b7280; --accent:#0ea5e9;
-      --brd:rgba(15,23,42,.12); --shadow:0 10px 30px rgba(0,0,0,.08); --radius:16px;
+      --bg:#f8fafc; --text:#0f172a; --muted:#6b7280; --accent:#0ea5e9;
+      --panel:#ffffff; --brd:#e5e7eb; --brd2:#d1d5db; --hover:#f1f5f9;
     }
     @media (prefers-color-scheme: dark){
-      :root{ --bg:#0b1220; --panel:#0f172a; --text:#e5e7eb; --muted:#a0a7b2; --accent:#38bdf8; --brd:rgba(255,255,255,.12) }
+      :root{
+        --bg:#0b1220; --text:#e5e7eb; --muted:#9aa3af; --accent:#38bdf8;
+        --panel:#0f172a; --brd:#1f2737; --brd2:#263043; --hover:#121c2c;
+      }
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial}
-    body{background:var(--bg); color:var(--text)}
-    .wrap{max-width:920px;margin:0 auto;padding:clamp(12px,3vw,20px)}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-    h1{margin:0;font-size:clamp(18px,4.5vw,26px)}
-    .card{background:var(--panel);border:1px solid var(--brd);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
-    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    label{font-size:14px;color:var(--muted)}
-    select,input,button{border:1px solid var(--brd);border-radius:12px;padding:10px 12px;background:#fff}
-    @media (prefers-color-scheme: dark){ select,input,button{background:#0b1324;color:var(--text)} }
-    .btn{cursor:pointer;font-weight:600}
-    .btn-primary{background:linear-gradient(90deg,var(--accent),#7dd3fc); color:#001319; border:0}
-    .btn-ghost{background:transparent}
-    .grid{display:grid;gap:10px}
-    .drinks{grid-template-columns:1fr}
-    @media(min-width:560px){ .drinks{grid-template-columns:repeat(2,1fr)} }
-    @media(min-width:860px){ .drinks{grid-template-columns:repeat(3,1fr)} }
-    .drink{display:grid;gap:8px;padding:12px;border:1px solid var(--brd);border-radius:14px;background:var(--panel)}
-    .drink h3{margin:0;font-size:16px}
-    .muted{color:var(--muted);font-size:12px}
-    .qty{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .qty input{width:64px;text-align:center;font-weight:700}
-    .btn-circle{width:40px;height:40px;border-radius:12px;font-size:20px;display:grid;place-items:center;background:#eef2ff;border:1px solid var(--brd)}
-    @media (prefers-color-scheme: dark){ .btn-circle{background:#111a2b} }
-    .totals{display:grid;gap:8px}
-    .total-line{display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px dashed var(--brd);border-radius:12px}
+    body{background:var(--bg);color:var(--text)}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    h1{margin:0;font-size:20px}
+    .toolbar{display:flex;gap:10px;align-items:center}
+    label{font-size:13px;color:var(--muted)}
+    input,select,button{border:1px solid var(--brd2);background:var(--panel);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+    button{cursor:pointer}
+    .badge{font-size:12px;padding:4px 8px;border:1px dashed var(--brd2);border-radius:999px;color:var(--muted)}
+    .sheet{background:var(--panel);border:1px solid var(--brd2);border-radius:10px;overflow:hidden}
+    table{width:100%;border-collapse:collapse}
+    thead th{background:var(--bg);font-weight:600;color:var(--muted);text-align:left;border-bottom:1px solid var(--brd2);padding:10px}
+    tbody td{border-bottom:1px solid var(--brd);padding:8px 10px}
+    tbody tr:hover{background:var(--hover)}
+    .col-name{width:50%}
+    .col-price{width:15%}
+    .col-qty{width:20%}
+    .col-sub{width:15%;text-align:right}
+    .qty-wrap{display:flex;gap:8px;align-items:center}
+    .btn-circle{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;font-size:18px}
+    .qty-input{width:64px;text-align:center}
+    .footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
+    .total-box{border:1px solid var(--brd2);border-radius:10px;padding:10px 12px;min-width:220px;background:var(--panel);text-align:right}
+    .muted{color:var(--muted)}
     .error{color:#b91c1c;font-size:13px;margin-top:6px;display:none}
-    .badge{padding:6px 10px;border-radius:999px;border:1px dashed var(--brd);font-size:12px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <h1 id="t-title">Amistades Belgas — Pedido</h1>
-      <div class="row">
+      <div class="toolbar">
         <label for="langSel" id="t-language">Idioma</label>
         <select id="langSel" aria-label="Idioma">
           <option value="fr">FR</option>
@@ -59,76 +60,83 @@
       </div>
     </header>
 
-    <div class="card" style="margin-bottom:10px">
-      <div class="row">
-        <div style="min-width:220px">
+    <div class="toolbar" style="justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div>
           <label for="nameInput" id="t-yourname">Tu nombre</label><br/>
           <input id="nameInput" type="text" placeholder="…" required/>
           <div id="nameErr" class="error">El nombre es obligatorio</div>
         </div>
-        <span class="badge" id="t-open-thu">Abierto los jueves</span>
       </div>
+      <span class="badge" id="t-open-thu">Abierto los jueves</span>
     </div>
 
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <strong id="t-drinks">Bebidas</strong>
-        <span class="muted" id="t-tap-to-add">Elige cantidades con − / +</span>
-      </div>
-      <div id="drinks" class="grid drinks" style="margin-top:8px"></div>
+    <div class="sheet">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name" id="t-drink-col">Bebida</th>
+            <th class="col-price" id="t-price-col">Precio</th>
+            <th class="col-qty" id="t-qty-col">Cantidad</th>
+            <th class="col-sub" id="t-sub-col">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
 
-      <div class="totals" style="margin-top:12px">
-        <div class="total-line"><span id="t-total">Total</span><strong><span id="totalAmount">0,00</span> €</strong></div>
-        <div class="row" style="gap:8px;margin-top:2px">
-          <button id="sendBtn" class="btn btn-primary">Enviar pedido</button>
-          <button id="clearBtn" class="btn btn-ghost">Borrar pedido</button>
-        </div>
+    <div class="footer">
+      <div>
+        <button id="sendBtn">Enviar pedido</button>
+        <button id="clearBtn">Borrar pedido</button>
         <div id="orderErr" class="error">Agrega al menos una bebida</div>
+      </div>
+      <div class="total-box">
+        <div class="muted" id="t-total">Total</div>
+        <div style="font-weight:700;font-size:18px"><span id="totalAmount">0,00</span> €</div>
       </div>
     </div>
   </div>
 
 <script>
-/* ==================== i18n ==================== */
+/* ===== i18n ===== */
 const I18N = {
-  es: { title:"Amistades Belgas — Pedido", language:"Idioma", yourname:"Tu nombre",
-        drinks:"Bebidas", tapToAdd:"Elige cantidades con − / +", total:"Total",
-        send:"Enviar pedido", clear:"Borrar pedido",
-        nameRequired:"El nombre es obligatorio", orderRequired:"Agrega al menos una bebida",
-        openThu:"Abierto los jueves", currency:"€" },
-  fr: { title:"Amistades Belgas — Commande", language:"Langue", yourname:"Votre nom",
-        drinks:"Boissons", tapToAdd:"Choisissez les quantités avec − / +", total:"Total",
-        send:"Envoyer la commande", clear:"Effacer la commande",
-        nameRequired:"Le nom est obligatoire", orderRequired:"Ajoutez au moins une boisson",
-        openThu:"Ouvert le jeudi", currency:"€" },
-  nl: { title:"Amistades Belgas — Bestelling", language:"Taal", yourname:"Je naam",
-        drinks:"Drankjes", tapToAdd:"Kies hoeveelheden met − / +", total:"Totaal",
-        send:"Bestelling verzenden", clear:"Bestelling wissen",
-        nameRequired:"Naam is verplicht", orderRequired:"Voeg minstens één drankje toe",
-        openThu:"Open op donderdag", currency:"€" },
-  en: { title:"Amistades Belgas — Drinks Order", language:"Language", yourname:"Your name",
-        drinks:"Drinks", tapToAdd:"Pick quantities with − / +", total:"Total",
-        send:"Send order", clear:"Clear order",
-        nameRequired:"Name is required", orderRequired:"Add at least one drink",
-        openThu:"Open on Thursdays", currency:"€" }
+  es:{title:"Amistades Belgas — Pedido",language:"Idioma",yourname:"Tu nombre",
+      drinkCol:"Bebida",priceCol:"Precio",qtyCol:"Cantidad",subCol:"Subtotal",
+      total:"Total",send:"Enviar pedido",clear:"Borrar pedido",
+      nameRequired:"El nombre es obligatorio",orderRequired:"Agrega al menos una bebida",
+      openThu:"Abierto los jueves",currency:"€"},
+  fr:{title:"Amistades Belgas — Commande",language:"Langue",yourname:"Votre nom",
+      drinkCol:"Boisson",priceCol:"Prix",qtyCol:"Quantité",subCol:"Sous-total",
+      total:"Total",send:"Envoyer la commande",clear:"Effacer la commande",
+      nameRequired:"Le nom est obligatoire",orderRequired:"Ajoutez au moins une boisson",
+      openThu:"Ouvert le jeudi",currency:"€"},
+  nl:{title:"Amistades Belgas — Bestelling",language:"Taal",yourname:"Je naam",
+      drinkCol:"Drank",priceCol:"Prijs",qtyCol:"Aantal",subCol:"Subtotaal",
+      total:"Totaal",send:"Bestelling verzenden",clear:"Bestelling wissen",
+      nameRequired:"Naam is verplicht",orderRequired:"Voeg minstens één drankje toe",
+      openThu:"Open op donderdag",currency:"€"},
+  en:{title:"Amistades Belgas — Drinks Order",language:"Language",yourname:"Your name",
+      drinkCol:"Drink",priceCol:"Price",qtyCol:"Qty",subCol:"Subtotal",
+      total:"Total",send:"Send order",clear:"Clear order",
+      nameRequired:"Name is required",orderRequired:"Add at least one drink",
+      openThu:"Open on Thursdays",currency:"€"}
 };
-
-const langSel = document.getElementById('langSel');
-const t = (k)=> I18N[state.lang][k] || k;
 
 function detectLang(){
   const saved = localStorage.getItem('ab-lang');
   if(saved) return saved;
-  const nav = (navigator.language||'').toLowerCase();
+  const nav=(navigator.language||'').toLowerCase();
   if(nav.startsWith('fr')) return 'fr';
   if(nav.startsWith('nl')) return 'nl';
   if(nav.startsWith('en')) return 'en';
   return 'es';
 }
+const state = { lang: detectLang(), quantities:{} };
+const t = k => I18N[state.lang][k]||k;
+const langSel = document.getElementById('langSel');
 
-/* ======== Catálogo de bebidas ========
-   Traducciones base + precios según la lista enviada.
-*/
+/* ===== Catálogo de bebidas (de tu lista) ===== */
 const DRINKS = [
   { id:'agua',        price:1.00, label:{es:'Agua sin gas', fr:'Eau plate', nl:'Plat water', en:'Still water'} },
   { id:'aguaGas',     price:1.00, label:{es:'Agua con gas', fr:'Eau gazeuse', nl:'Spuitwater', en:'Sparkling water'} },
@@ -161,109 +169,109 @@ const DRINKS = [
   { id:'chupito',     price:1.00, label:{es:'Chupito', fr:'Shot', nl:'Shotje', en:'Shot'} }
 ];
 
-// ======== Estado & UI ========
-const state = {
-  lang: detectLang(),
-  quantities: Object.fromEntries(DRINKS.map(d=>[d.id,0])),
-};
-
+const rowsEl = document.getElementById('rows');
+const totalEl = document.getElementById('totalAmount');
 const nameInput = document.getElementById('nameInput');
-const nameErr   = document.getElementById('nameErr');
-const orderErr  = document.getElementById('orderErr');
-const drinksEl  = document.getElementById('drinks');
-const totalAmountEl = document.getElementById('totalAmount');
+const nameErr = document.getElementById('nameErr');
+const orderErr = document.getElementById('orderErr');
 
-function renderDrinks(){
-  drinksEl.innerHTML = '';
-  DRINKS.forEach(d=>{
-    const card = document.createElement('div');
-    card.className = 'drink';
-    card.innerHTML = `
-      <h3>${d.label[state.lang]} — ${d.price.toFixed(2)} ${t('currency')}</h3>
-      <div class="qty">
-        <button class="btn-circle" data-id="${d.id}" data-delta="-1">−</button>
-        <input type="number" id="inp-${d.id}" min="0" value="${state.quantities[d.id]}" />
-        <button class="btn-circle" data-id="${d.id}" data-delta="1">+</button>
-      </div>
-    `;
-    drinksEl.appendChild(card);
-  });
-  // listeners
-  drinksEl.querySelectorAll('.btn-circle').forEach(b=>{
-    b.addEventListener('click', (e)=>{
-      const id = e.currentTarget.dataset.id;
-      const delta = parseInt(e.currentTarget.dataset.delta,10);
-      const next = Math.max(0, (state.quantities[id]||0) + delta);
-      state.quantities[id] = next;
-      document.getElementById('inp-'+id).value = next;
-      updateTotal();
-    });
-  });
-  DRINKS.forEach(d=>{
-    const inp = document.getElementById('inp-'+d.id);
-    inp.addEventListener('change', ()=>{
-      let v = parseInt(inp.value||'0',10);
-      if(isNaN(v) || v<0) v = 0;
-      state.quantities[d.id]=v;
-      inp.value = v;
-      updateTotal();
-    });
-  });
-}
-
-function updateTexts(){
-  document.getElementById('t-title').textContent   = t('title');
-  document.getElementById('t-language').textContent= t('language');
-  document.getElementById('t-yourname').textContent= t('yourname');
-  document.getElementById('t-drinks').textContent  = t('drinks');
-  document.getElementById('t-tap-to-add').textContent = t('tapToAdd');
-  document.getElementById('t-total').textContent   = t('total');
-  document.getElementById('sendBtn').textContent   = t('send');
-  document.getElementById('clearBtn').textContent  = t('clear');
-  document.getElementById('t-open-thu').textContent= t('openThu');
-  renderDrinks(); updateTotal();
-}
-
-function updateTotal(){
-  let sum = 0;
-  DRINKS.forEach(d=>{ sum += (state.quantities[d.id]||0) * d.price; });
+/* ===== Render tabla estilo Excel ===== */
+function renderTable(){
+  rowsEl.innerHTML = '';
   const loc = state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES';
-  totalAmountEl.textContent = sum.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});
+  DRINKS.forEach(d=>{
+    if(state.quantities[d.id]===undefined) state.quantities[d.id]=0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-name">${d.label[state.lang]}</td>
+      <td class="col-price">${d.price.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
+      <td class="col-qty">
+        <div class="qty-wrap">
+          <button class="btn-circle" data-id="${d.id}" data-delta="-1">−</button>
+          <input class="qty-input" id="inp-${d.id}" type="number" min="0" value="${state.quantities[d.id]}"/>
+          <button class="btn-circle" data-id="${d.id}" data-delta="1">+</button>
+        </div>
+      </td>
+      <td class="col-sub" id="sub-${d.id}">${lineSubtotal(d).toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
+    `;
+    rowsEl.appendChild(tr);
+  });
+  // listeners por fila
+  rowsEl.querySelectorAll('.btn-circle').forEach(b=>{
+    b.addEventListener('click', e=>{
+      const id=e.currentTarget.dataset.id;
+      const delta=parseInt(e.currentTarget.dataset.delta,10);
+      setQty(id, Math.max(0,(state.quantities[id]||0)+delta));
+    });
+  });
+  DRINKS.forEach(d=>{
+    const inp=document.getElementById('inp-'+d.id);
+    inp.addEventListener('change', ()=>{
+      let v=parseInt(inp.value||'0',10); if(isNaN(v)||v<0) v=0;
+      setQty(d.id, v);
+    });
+  });
+  updateTotals();
+}
+function lineSubtotal(d){ return (state.quantities[d.id]||0) * d.price; }
+function setQty(id, v){
+  const loc = state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES';
+  state.quantities[id]=v;
+  const inp=document.getElementById('inp-'+id); if(inp) inp.value=v;
+  const d = DRINKS.find(x=>x.id===id);
+  const sub = document.getElementById('sub-'+id);
+  if(sub && d) sub.textContent = `${lineSubtotal(d).toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}`;
+  updateTotals();
+}
+function updateTotals(){
+  const loc = state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES';
+  const total = DRINKS.reduce((s,d)=> s + lineSubtotal(d), 0);
+  totalEl.textContent = total.toLocaleString(loc,{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
-// Idioma
+/* ===== Textos ===== */
+function applyTexts(){
+  document.getElementById('t-title').textContent = t('title');
+  document.getElementById('t-language').textContent = t('language');
+  document.getElementById('t-yourname').textContent = t('yourname');
+  document.getElementById('t-open-thu').textContent = t('openThu');
+  document.getElementById('t-drink-col').textContent = t('drinkCol');
+  document.getElementById('t-price-col').textContent = t('priceCol');
+  document.getElementById('t-qty-col').textContent   = t('qtyCol');
+  document.getElementById('t-sub-col').textContent   = t('subCol');
+  document.getElementById('t-total').textContent     = t('total');
+  document.getElementById('sendBtn').textContent     = t('send');
+  document.getElementById('clearBtn').textContent    = t('clear');
+}
+
+/* ===== Eventos ===== */
 langSel.value = state.lang;
 langSel.addEventListener('change', ()=>{
   state.lang = langSel.value;
   localStorage.setItem('ab-lang', state.lang);
-  updateTexts();
+  applyTexts();
+  renderTable();
 });
 
-// Botones
 document.getElementById('clearBtn').addEventListener('click', ()=>{
-  Object.keys(state.quantities).forEach(k=> state.quantities[k]=0);
-  renderDrinks(); updateTotal();
+  for(const k of Object.keys(state.quantities)) state.quantities[k]=0;
+  renderTable();
   orderErr.style.display='none';
 });
 
 document.getElementById('sendBtn').addEventListener('click', ()=>{
-  const name = (nameInput.value||'').trim();
+  const name=(nameInput.value||'').trim();
   const totalUnits = Object.values(state.quantities).reduce((a,b)=>a+(b||0),0);
   nameErr.style.display  = name ? 'none':'block';
   orderErr.style.display = totalUnits>0 ? 'none':'block';
   if(!name || totalUnits===0) return;
 
   const order = {
-    name,
-    lang: state.lang,
-    createdAt: new Date().toISOString(),
-    items: Object.fromEntries(DRINKS
-      .filter(d=> (state.quantities[d.id]||0)>0)
-      .map(d=>[d.id,{qty:state.quantities[d.id], price:d.price, label:d.label[state.lang]}])
-    ),
+    name, lang: state.lang, createdAt: new Date().toISOString(),
+    items: Object.fromEntries(DRINKS.filter(d=> (state.quantities[d.id]||0)>0)
+             .map(d=>[d.id,{qty:state.quantities[d.id], price:d.price, label:d.label[state.lang]}])),
     total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0)
   };
-
   localStorage.setItem('ab-last-order', JSON.stringify(order));
   alert(({es:'Pedido preparado. En el próximo paso lo enviaremos al backend.',
          fr:'Commande préparée. À l’étape suivante nous l’enverrons au backend.',
@@ -271,8 +279,9 @@ document.getElementById('sendBtn').addEventListener('click', ()=>{
          en:'Order prepared. Next step we will send it to the backend.'})[state.lang]);
 });
 
-// Init
-updateTexts();
+/* ===== Init ===== */
+applyTexts();
+renderTable();
 </script>
 </body>
 </html>
