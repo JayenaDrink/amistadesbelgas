@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Amistades Belgas — Admin</title>
+<meta name="color-scheme" content="light dark">
+<style>
+  :root{--bg:#f8fafc;--text:#0f172a;--muted:#64748b;--panel:#ffffff;--brd:#e5e7eb;--brd2:#d1d5db;--hover:#f1f5f9;--accent:#0ea5e9}
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#0b1220;--text:#e5e7eb;--muted:#9aa3af;--panel:#0f172a;--brd:#202938;--brd2:#263043;--hover:#101a2a;--accent:#38bdf8}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+  h1{margin:0;font-size:20px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  select,input,button{border:1px solid var(--brd2);background:var(--panel);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+  button{cursor:pointer}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  .kpi{background:var(--panel);border:1px solid var(--brd2);border-radius:10px;padding:10px}
+  .kpi .v{font-size:20px;font-weight:700}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:900px){.cards{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr 1fr}}
+  .card{background:var(--panel);border:1px solid var(--brd2);border-radius:10px;overflow:hidden}
+  .card h2{margin:0;padding:10px;border-bottom:1px solid var(--brd2);font-size:16px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--brd)}
+  thead th{background:var(--bg);color:var(--muted);text-align:left}
+  tbody tr:hover{background:var(--hover)}
+  .r-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .small{font-size:12px;color:var(--muted)}
+  .btn-xs{padding:6px 8px;border-radius:6px}
+  .right{text-align:right}
+  .msg{display:none;margin-bottom:10px;padding:10px;border:1px solid #ef4444;color:#7f1d1d;background:#fff0f0;border-radius:8px}
+  @media (prefers-color-scheme: dark){.msg{border-color:#ef4444;color:#fecaca;background:#2a1515}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="t-title">Amistades Belgas — Admin</h1>
+    <div class="toolbar">
+      <label for="langSel" id="t-language">Idioma</label>
+      <select id="langSel">
+        <option value="es" selected>ES</option>
+        <option value="fr">FR</option>
+        <option value="nl">NL</option>
+        <option value="en">EN</option>
+      </select>
+      <label for="daySel" id="t-day">Día</label>
+      <input type="date" id="daySel"/>
+      <button id="reloadBtn">Actualizar</button>
+    </div>
+  </header>
+
+  <div id="msg" class="msg"></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="small" id="t-kpi-total">Pedidos totales</div><div class="v" id="kpiTotal">0</div></div>
+    <div class="kpi"><div class="small" id="t-kpi-pending">Pendientes</div><div class="v" id="kpiPending">0</div></div>
+    <div class="kpi"><div class="small" id="t-kpi-completed">Completados</div><div class="v" id="kpiCompleted">0</div></div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h2 id="t-pending">Pendientes</h2>
+      <table>
+        <thead>
+          <tr>
+            <th id="t-th-time">Hora</th>
+            <th id="t-th-name">Nombre</th>
+            <th id="t-th-items">Ítems</th>
+            <th class="right" id="t-th-total">Total</th>
+            <th id="t-th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="pendingBody"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2 id="t-completed">Completados</h2>
+      <table>
+        <thead>
+          <tr>
+            <th id="t-th-time2">Hora</th>
+            <th id="t-th-name2">Nombre</th>
+            <th id="t-th-items2">Ítems</th>
+            <th class="right" id="t-th-total2">Total</th>
+            <th id="t-th-actions2">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="completedBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* ============ i18n ============ */
+const I18N = {
+  es:{title:"Amistades Belgas — Admin",language:"Idioma",day:"Día",reload:"Actualizar",
+      kpiTotal:"Pedidos totales",kpiPending:"Pendientes",kpiCompleted:"Completados",
+      pending:"Pendientes",completed:"Completados",
+      thTime:"Hora",thName:"Nombre",thItems:"Ítems",thTotal:"Total",thActions:"Acciones",
+      markDone:"Marcar entregado", reopen:"Reabrir", none:"Sin pedidos"},
+  fr:{title:"Amistades Belgas — Admin",language:"Langue",day:"Jour",reload:"Actualiser",
+      kpiTotal:"Commandes totales",kpiPending:"En attente",kpiCompleted:"Terminées",
+      pending:"En attente",completed:"Terminées",
+      thTime:"Heure",thName:"Nom",thItems:"Articles",thTotal:"Total",thActions:"Actions",
+      markDone:"Marquer livré", reopen:"Rouvrir", none:"Aucune commande"},
+  nl:{title:"Amistades Belgas — Admin",language:"Taal",day:"Dag",reload:"Vernieuwen",
+      kpiTotal:"Bestellingen totaal",kpiPending:"In afwachting",kpiCompleted:"Afgerond",
+      pending:"In afwachting",completed:"Afgerond",
+      thTime:"Tijd",thName:"Naam",thItems:"Items",thTotal:"Totaal",thActions:"Acties",
+      markDone:"Als geleverd markeren", reopen:"Heropenen", none:"Geen bestellingen"},
+  en:{title:"Amistades Belgas — Admin",language:"Language",day:"Day",reload:"Refresh",
+      kpiTotal:"Total orders",kpiPending:"Pending",kpiCompleted:"Completed",
+      pending:"Pending",completed:"Completed",
+      thTime:"Time",thName:"Name",thItems:"Items",thTotal:"Total",thActions:"Actions",
+      markDone:"Mark delivered", reopen:"Reopen", none:"No orders"}
+};
+let lang = 'es';
+const t = k => I18N[lang][k]||k;
+function money(n){ return (n||0).toLocaleString(lang==='nl'?'nl-NL':lang==='fr'?'fr-FR':lang==='en'?'en-GB':'es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+
+/* ============ UI text apply ============ */
+function applyTexts(){
+  document.getElementById('t-title').textContent=t('title');
+  document.getElementById('t-language').textContent=t('language');
+  document.getElementById('t-day').textContent=t('day');
+  document.getElementById('reloadBtn').textContent=t('reload');
+  document.getElementById('t-kpi-total').textContent=t('kpiTotal');
+  document.getElementById('t-kpi-pending').textContent=t('kpiPending');
+  document.getElementById('t-kpi-completed').textContent=t('kpiCompleted');
+  document.getElementById('t-pending').textContent=t('pending');
+  document.getElementById('t-completed').textContent=t('completed');
+  document.getElementById('t-th-time').textContent=t('thTime');
+  document.getElementById('t-th-name').textContent=t('thName');
+  document.getElementById('t-th-items').textContent=t('thItems');
+  document.getElementById('t-th-total').textContent=t('thTotal');
+  document.getElementById('t-th-actions').textContent=t('thActions');
+  document.getElementById('t-th-time2').textContent=t('thTime');
+  document.getElementById('t-th-name2').textContent=t('thName');
+  document.getElementById('t-th-items2').textContent=t('thItems');
+  document.getElementById('t-th-total2').textContent=t('thTotal');
+  document.getElementById('t-th-actions2').textContent=t('thActions');
+}
+
+/* ============ Firebase ============ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAzb1g7DOGluAfcvyWushkkqcHawh2FHaM",
+  authDomain: "amistades-belgas.firebaseapp.com",
+  projectId: "amistades-belgas",
+  storageBucket: "amistades-belgas.firebasestorage.app",
+  messagingSenderId: "897458358699",
+  appId: "1:897458358699:web:842a5f29287e230ab02aee"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+/* ============ Helpers ============ */
+const daySel = document.getElementById('daySel');
+const langSel = document.getElementById('langSel');
+const reloadBtn = document.getElementById('reloadBtn');
+const msg = document.getElementById('msg');
+
+function todayStr(){ const d=new Date(); d.setHours(0,0,0,0); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
+daySel.value = todayStr();
+
+langSel.addEventListener('change',()=>{ lang=langSel.value; applyTexts(); renderCurrent(); });
+reloadBtn.addEventListener('click', ()=>{ renderCurrent(true); });
+
+let unsub = null;
+function renderCurrent(force=false){
+  if(unsub){ unsub(); unsub=null; }
+  const day = daySel.value;
+  if(!day){ msg.style.display='block'; msg.textContent='Selecciona un día válido.'; return; }
+  msg.style.display='none';
+
+  const col = collection(db,'orders');
+  const q = query(col, where('day','==',day), orderBy('createdAt','asc'));
+  unsub = onSnapshot(q, (snap)=>{
+    const pending=[], completed=[];
+    snap.forEach(docSnap=>{
+      const d=docSnap.data(); const id=docSnap.id;
+      if(d.status==='completed') completed.push({...d,id});
+      else pending.push({...d,id});
+    });
+    // KPIs
+    document.getElementById('kpiTotal').textContent = String(pending.length+completed.length);
+    document.getElementById('kpiPending').textContent = String(pending.length);
+    document.getElementById('kpiCompleted').textContent = String(completed.length);
+    // Renders
+    drawTable('pendingBody', pending, true);
+    drawTable('completedBody', completed, false);
+  }, (err)=>{
+    console.error(err);
+    msg.style.display='block'; msg.textContent = 'Error al leer Firestore. Revisa reglas o conexión.';
+  });
+}
+
+function itemsToText(items){
+  if(!items) return '';
+  // items es {id:{qty,price,label}}
+  return Object.values(items).map(it=>`${it.label||''}×${it.qty}`).join(', ');
+}
+
+function drawTable(tbodyId, rows, allowComplete){
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML='';
+  if(rows.length===0){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td colspan="5" class="small">${t('none')}</td>`;
+    tbody.appendChild(tr); return;
+  }
+  rows.forEach(r=>{
+    const created = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
+    const hh = created.toLocaleTimeString(lang==='nl'?'nl-NL':lang==='fr'?'fr-FR':lang==='en'?'en-GB':'es-ES',{hour:'2-digit',minute:'2-digit'});
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td>${hh}</td>
+      <td>${r.name||''}</td>
+      <td>${itemsToText(r.items)}</td>
+      <td class="right">${money(r.total)}</td>
+      <td>
+        ${allowComplete
+          ? `<button class="btn-xs" data-act="done" data-id="${r.id}">${t('markDone')}</button>`
+          : `<button class="btn-xs" data-act="reopen" data-id="${r.id}">${t('reopen')}</button>`
+        }
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  // attach actions
+  tbody.querySelectorAll('button[data-id]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.id;
+      const act = btn.dataset.act;
+      try{
+        const ref = doc(db,'orders',id);
+        if(act==='done'){
+          await updateDoc(ref,{ status:'completed', completedAt: serverTimestamp() });
+        }else{
+          await updateDoc(ref,{ status:'pending', completedAt: null });
+        }
+      }catch(e){
+        console.error(e);
+        alert('No se pudo actualizar el estado. Revisa reglas de Firestore.');
+      }
+    });
+  });
+}
+
+// init
+applyTexts();
+renderCurrent();
+</script>
+</body>
+</html>
