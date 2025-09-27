@@ -29,12 +29,21 @@
   th,td{padding:8px 10px;border-bottom:1px solid var(--brd)}
   thead th{background:var(--bg);color:var(--muted);text-align:left}
   tbody tr:hover{background:var(--hover)}
-  .r-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
-  .small{font-size:12px;color:var(--muted)}
-  .btn-xs{padding:6px 8px;border-radius:6px}
   .right{text-align:right}
   .msg{display:none;margin-bottom:10px;padding:10px;border:1px solid #ef4444;color:#7f1d1d;background:#fff0f0;border-radius:8px}
   @media (prefers-color-scheme: dark){.msg{border-color:#ef4444;color:#fecaca;background:#2a1515}}
+  .btn-xs{padding:6px 8px;border-radius:6px}
+  /* --- detalle expandible --- */
+  .items-pill{
+    display:inline-block;padding:3px 8px;border:1px solid var(--brd2);
+    border-radius:999px;font-size:12px;cursor:pointer;background:var(--panel);
+  }
+  .items-pill.open{background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35)}
+  .detail-row{background:var(--hover)}
+  .detail-cell{padding:8px 12px;border-top:1px solid var(--brd)}
+  .detail-list{margin:0;padding-left:16px}
+  .detail-list li{margin:2px 0}
+  .mono{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -104,26 +113,32 @@ const I18N = {
       kpiTotal:"Pedidos totales",kpiPending:"Pendientes",kpiCompleted:"Completados",
       pending:"Pendientes",completed:"Completados",
       thTime:"Hora",thName:"Nombre",thItems:"Ítems",thTotal:"Total",thActions:"Acciones",
-      markDone:"Marcar entregado", reopen:"Reabrir", none:"Sin pedidos"},
+      markDone:"Marcar entregado", reopen:"Reabrir", none:"Sin pedidos",
+      details:"Ver detalle", hide:"Ocultar", itemsCount:"{n} ítems", line:"{qty}× {label} · {price} €"},
   fr:{title:"Amistades Belgas — Admin",language:"Langue",day:"Jour",reload:"Actualiser",
       kpiTotal:"Commandes totales",kpiPending:"En attente",kpiCompleted:"Terminées",
       pending:"En attente",completed:"Terminées",
       thTime:"Heure",thName:"Nom",thItems:"Articles",thTotal:"Total",thActions:"Actions",
-      markDone:"Marquer livré", reopen:"Rouvrir", none:"Aucune commande"},
+      markDone:"Marquer livré", reopen:"Rouvrir", none:"Aucune commande",
+      details:"Voir le détail", hide:"Masquer", itemsCount:"{n} articles", line:"{qty}× {label} · {price} €"},
   nl:{title:"Amistades Belgas — Admin",language:"Taal",day:"Dag",reload:"Vernieuwen",
       kpiTotal:"Bestellingen totaal",kpiPending:"In afwachting",kpiCompleted:"Afgerond",
       pending:"In afwachting",completed:"Afgerond",
       thTime:"Tijd",thName:"Naam",thItems:"Items",thTotal:"Totaal",thActions:"Acties",
-      markDone:"Als geleverd markeren", reopen:"Heropenen", none:"Geen bestellingen"},
+      markDone:"Als geleverd markeren", reopen:"Heropenen", none:"Geen bestellingen",
+      details:"Details bekijken", hide:"Verbergen", itemsCount:"{n} items", line:"{qty}× {label} · {price} €"},
   en:{title:"Amistades Belgas — Admin",language:"Language",day:"Day",reload:"Refresh",
       kpiTotal:"Total orders",kpiPending:"Pending",kpiCompleted:"Completed",
       pending:"Pending",completed:"Completed",
       thTime:"Time",thName:"Name",thItems:"Items",thTotal:"Total",thActions:"Actions",
-      markDone:"Mark delivered", reopen:"Reopen", none:"No orders"}
+      markDone:"Mark delivered", reopen:"Reopen", none:"No orders",
+      details:"View details", hide:"Hide", itemsCount:"{n} items", line:"{qty}× {label} · {price} €"}
 };
 let lang = 'es';
 const t = k => I18N[lang][k]||k;
-function money(n){ return (n||0).toLocaleString(lang==='nl'?'nl-NL':lang==='fr'?'fr-FR':lang==='en'?'en-GB':'es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+function loc(){ return lang==='nl'?'nl-NL':lang==='fr'?'fr-FR':lang==='en'?'en-GB':'es-ES'; }
+function fmt(n){ return (n||0).toLocaleString(loc(),{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function money(n){ return fmt(n)+' €'; }
 
 /* ============ UI text apply ============ */
 function applyTexts(){
@@ -150,7 +165,7 @@ function applyTexts(){
 
 /* ============ Firebase ============ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAzb1g7DOGluAfcvyWushkkqcHawh2FHaM",
@@ -176,6 +191,25 @@ langSel.addEventListener('change',()=>{ lang=langSel.value; applyTexts(); render
 reloadBtn.addEventListener('click', ()=>{ renderCurrent(true); });
 
 let unsub = null;
+
+function itemsCount(items){
+  let n=0; if(items) Object.values(items).forEach(it=> n += Number(it.qty||0));
+  return (I18N[lang].itemsCount||"{n}").replace('{n}', n);
+}
+function itemsListHTML(items){
+  if(!items) return "";
+  const arr = Object.values(items);
+  const lis = arr.map(it=>{
+    const price = typeof it.price==="number" ? fmt(it.price) : fmt(Number(it.price||0));
+    const text = (I18N[lang].line||"{qty}× {label} · {price} €")
+                  .replace('{qty}', it.qty||0)
+                  .replace('{label}', it.label||'')
+                  .replace('{price}', price);
+    return `<li><span class="mono">${text}</span></li>`;
+  }).join('');
+  return `<ul class="detail-list">${lis}</ul>`;
+}
+
 function renderCurrent(force=false){
   if(unsub){ unsub(); unsub=null; }
   const day = daySel.value;
@@ -183,7 +217,8 @@ function renderCurrent(force=false){
   msg.style.display='none';
 
   const col = collection(db,'orders');
-  const q = query(col, where('day','==',day)); // sin orderBy para evitar índice
+  // sin orderBy para evitar índice; ordenamos en cliente
+  const q = query(col, where('day','==',day));
   unsub = onSnapshot(q, (snap)=>{
     const pending=[], completed=[];
     snap.forEach(docSnap=>{
@@ -191,19 +226,16 @@ function renderCurrent(force=false){
       if(d.status==='completed') completed.push({...d,id});
       else pending.push({...d,id});
     });
-    // Ordenar por createdAt asc (cliente)
-const toTs = (r) => r.createdAt?.toDate ? r.createdAt.toDate().getTime() : 0;
-pending.sort((a,b)=> toTs(a)-toTs(b));
-completed.sort((a,b)=> toTs(a)-toTs(b));
 
-  // KPIs
-document.getElementById('kpiTotal').textContent = String(pending.length+completed.length);
-document.getElementById('kpiPending').textContent = String(pending.length);
-document.getElementById('kpiCompleted').textContent = String(completed.length);
+    // Orden por createdAt (cliente)
+    const toTs = (r) => r.createdAt?.toDate ? r.createdAt.toDate().getTime() : 0;
+    pending.sort((a,b)=> toTs(a)-toTs(b));
+    completed.sort((a,b)=> toTs(a)-toTs(b));
 
-// Tablas
-drawTable('pendingBody', pending, true);
-drawTable('completedBody', completed, false);
+    // KPIs
+    document.getElementById('kpiTotal').textContent = String(pending.length+completed.length);
+    document.getElementById('kpiPending').textContent = String(pending.length);
+    document.getElementById('kpiCompleted').textContent = String(completed.length);
 
     // Renders
     drawTable('pendingBody', pending, true);
@@ -212,12 +244,6 @@ drawTable('completedBody', completed, false);
     console.error(err);
     msg.style.display='block'; msg.textContent = 'Error al leer Firestore. Revisa reglas o conexión.';
   });
-}
-
-function itemsToText(items){
-  if(!items) return '';
-  // items es {id:{qty,price,label}}
-  return Object.values(items).map(it=>`${it.label||''}×${it.qty}`).join(', ');
 }
 
 function drawTable(tbodyId, rows, allowComplete){
@@ -230,12 +256,18 @@ function drawTable(tbodyId, rows, allowComplete){
   }
   rows.forEach(r=>{
     const created = r.createdAt?.toDate ? r.createdAt.toDate() : new Date();
-    const hh = created.toLocaleTimeString(lang==='nl'?'nl-NL':lang==='fr'?'fr-FR':lang==='en'?'en-GB':'es-ES',{hour:'2-digit',minute:'2-digit'});
+    const hh = created.toLocaleTimeString(loc(),{hour:'2-digit',minute:'2-digit'});
+
+    // Fila principal
     const tr=document.createElement('tr');
     tr.innerHTML = `
       <td>${hh}</td>
       <td>${r.name||''}</td>
-      <td>${itemsToText(r.items)}</td>
+      <td>
+        <button class="items-pill" data-act="toggle" data-id="${r.id}">
+          ${itemsCount(r.items)} · ${t('details')}
+        </button>
+      </td>
       <td class="right">${money(r.total)}</td>
       <td>
         ${allowComplete
@@ -245,17 +277,39 @@ function drawTable(tbodyId, rows, allowComplete){
       </td>
     `;
     tbody.appendChild(tr);
+
+    // Fila de detalle
+    const trDetail = document.createElement('tr');
+    trDetail.className = 'detail-row';
+    trDetail.style.display = 'none';
+    trDetail.setAttribute('data-detail-for', r.id);
+    trDetail.innerHTML = `
+      <td colspan="5" class="detail-cell">
+        ${itemsListHTML(r.items)}
+      </td>
+    `;
+    tbody.appendChild(trDetail);
   });
-  // attach actions
+
+  // Acciones
   tbody.querySelectorAll('button[data-id]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const id = btn.dataset.id;
       const act = btn.dataset.act;
+      if(act === 'toggle'){
+        const row = tbody.querySelector(`tr[data-detail-for="${id}"]`);
+        const open = row.style.display !== 'none';
+        row.style.display = open ? 'none' : '';
+        btn.classList.toggle('open', !open);
+        btn.textContent = (open ? (itemsCount(rows.find(x=>x.id===id)?.items) + ' · ' + t('details'))
+                                : (itemsCount(rows.find(x=>x.id===id)?.items) + ' · ' + t('hide')));
+        return;
+      }
       try{
         const ref = doc(db,'orders',id);
         if(act==='done'){
           await updateDoc(ref,{ status:'completed', completedAt: serverTimestamp() });
-        }else{
+        }else if(act==='reopen'){
           await updateDoc(ref,{ status:'pending', completedAt: null });
         }
       }catch(e){
@@ -267,8 +321,19 @@ function drawTable(tbodyId, rows, allowComplete){
 }
 
 // init
-applyTexts();
-renderCurrent();
+function init(){
+  lang = (localStorage.getItem('ab-admin-lang') || 'es');
+  document.getElementById('langSel').value = lang;
+  document.getElementById('langSel').addEventListener('change', ()=>{
+    lang = document.getElementById('langSel').value;
+    localStorage.setItem('ab-admin-lang', lang);
+    applyTexts();
+    renderCurrent();
+  });
+  applyTexts();
+  renderCurrent();
+}
+init();
 </script>
 </body>
 </html>
