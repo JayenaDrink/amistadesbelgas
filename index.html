@@ -105,22 +105,26 @@ const I18N = {
       drinkCol:"Bebida",priceCol:"Precio",qtyCol:"Cantidad",subCol:"Subtotal",
       total:"Total",send:"Enviar pedido",clear:"Borrar pedido",
       nameRequired:"El nombre es obligatorio",orderRequired:"Agrega al menos una bebida",
-      openThu:"Abierto los jueves",currency:"€"},
+      openThu:"Abierto los jueves",currency:"€",
+      sent:"Pedido enviado (ID: {id}).", sendErr:"No se pudo enviar el pedido. Reintenta."},
   fr:{title:"Amistades Belgas — Commande",language:"Langue",yourname:"Votre nom",
       drinkCol:"Boisson",priceCol:"Prix",qtyCol:"Quantité",subCol:"Sous-total",
       total:"Total",send:"Envoyer la commande",clear:"Effacer la commande",
       nameRequired:"Le nom est obligatoire",orderRequired:"Ajoutez au moins une boisson",
-      openThu:"Ouvert le jeudi",currency:"€"},
+      openThu:"Ouvert le jeudi",currency:"€",
+      sent:"Commande envoyée (ID : {id}).", sendErr:"Impossible d’envoyer la commande. Réessayez."},
   nl:{title:"Amistades Belgas — Bestelling",language:"Taal",yourname:"Je naam",
       drinkCol:"Drank",priceCol:"Prijs",qtyCol:"Aantal",subCol:"Subtotaal",
       total:"Totaal",send:"Bestelling verzenden",clear:"Bestelling wissen",
       nameRequired:"Naam is verplicht",orderRequired:"Voeg minstens één drankje toe",
-      openThu:"Open op donderdag",currency:"€"},
+      openThu:"Open op donderdag",currency:"€",
+      sent:"Bestelling verzonden (ID: {id}).", sendErr:"Bestelling kon niet worden verzonden. Probeer opnieuw."},
   en:{title:"Amistades Belgas — Drinks Order",language:"Language",yourname:"Your name",
       drinkCol:"Drink",priceCol:"Price",qtyCol:"Qty",subCol:"Subtotal",
       total:"Total",send:"Send order",clear:"Clear order",
       nameRequired:"Name is required",orderRequired:"Add at least one drink",
-      openThu:"Open on Thursdays",currency:"€"}
+      openThu:"Open on Thursdays",currency:"€",
+      sent:"Order sent (ID: {id}).", sendErr:"Could not send order. Please try again."}
 };
 
 function detectLang(){
@@ -158,7 +162,7 @@ const DRINKS = [
   { id:'vinoRosado',  price:7.00, label:{es:'Vino Rosado', fr:'Vin rosé', nl:'Rosé wijn', en:'Rosé wine'} },
   { id:'botellaVino', price:9.00, label:{es:'Botella vino', fr:'Bouteille de vin', nl:'Fles wijn', en:'Bottle of wine'} },
   { id:'cavaPeq',     price:2.50, label:{es:'Cava pequeño', fr:'Cava petit', nl:'Kleine cava', en:'Small cava'} },
-  { id:'cavaGrande',  price:11.00,label:{es:'Cava Grande', fr:'Cava grande', nl:'Grote cava', en:'Large cava'} },
+  { id:'cavaGrande',  price:11.00, label:{es:'Cava Grande', fr:'Cava grande', nl:'Grote cava', en:'Large cava'} },
   { id:'whisky',      price:2.50, label:{es:'Whisky', fr:'Whisky', nl:'Whisky', en:'Whisky'} },
   { id:'cognac',      price:2.50, label:{es:'Cognac', fr:'Cognac', nl:'Cognac', en:'Cognac'} },
   { id:'gin',         price:2.50, label:{es:'Gin', fr:'Gin', nl:'Gin', en:'Gin'} },
@@ -175,6 +179,13 @@ const nameErr = document.getElementById('nameErr');
 const orderErr = document.getElementById('orderErr');
 
 function locale(){ return state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES'; }
+
+// Identificador único por dispositivo (persistente)
+const DEVICE_ID = (() => {
+  let id = localStorage.getItem('ab-device-id');
+  if (!id) { id = (crypto?.randomUUID?.() || String(Math.random()).slice(2)); localStorage.setItem('ab-device-id', id); }
+  return id;
+})();
 
 function lineSubtotal(d){ return (state.quantities[d.id]||0) * d.price; }
 
@@ -263,29 +274,27 @@ document.getElementById('sendBtn').addEventListener('click', async ()=>{
   orderErr.style.display = totalUnits>0 ? 'none':'block';
   if(!name || totalUnits===0) return;
 
+  const dayStr = new Date().toISOString().slice(0,10);
   const order = {
     name, lang: state.lang, createdAt: new Date().toISOString(),
     items: Object.fromEntries(DRINKS.filter(d=> (state.quantities[d.id]||0)>0)
              .map(d=>[d.id,{qty:state.quantities[d.id], price:d.price, label:d.label[state.lang]}])),
-    total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0)
+    total: DRINKS.reduce((s,d)=> s + (state.quantities[d.id]||0)*d.price, 0),
+    deviceId: DEVICE_ID,
+    day: dayStr
   };
 
   localStorage.setItem('ab-last-order', JSON.stringify(order));
 
   try {
     const docId = await (window.abSendOrder ? window.abSendOrder(order) : Promise.reject(new Error('Firestore no inicializado')));
-    alert(({es:`Pedido enviado (ID: ${docId}).`,
-            fr:`Commande envoyée (ID : ${docId}).`,
-            nl:`Bestelling verzonden (ID: ${docId}).`,
-            en:`Order sent (ID: ${docId}).`})[state.lang]);
+    const msg = (I18N[state.lang].sent||'Pedido enviado (ID: {id}).').replace('{id}', docId);
+    alert(msg);
     for(const k of Object.keys(state.quantities)) state.quantities[k]=0;
     renderTable();
   } catch(e) {
     console.error(e);
-    alert(({es:'No se pudo enviar el pedido. Reintenta.',
-            fr:'Impossible d’envoyer la commande. Réessayez.',
-            nl:'Bestelling kon niet worden verzonden. Probeer opnieuw.',
-            en:'Could not send order. Please try again.'})[state.lang]);
+    alert(I18N[state.lang].sendErr||'No se pudo enviar el pedido. Reintenta.');
   }
 });
 
@@ -293,10 +302,10 @@ applyTexts();
 renderTable();
 </script>
 
-<!-- ======= FIREBASE (módulo separado) ======= -->
+<!-- ======= FIREBASE (envío + watcher de alertas) ======= -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAzb1g7DOGluAfcvyWushkkqcHawh2FHaM",
@@ -310,17 +319,67 @@ renderTable();
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
 
-  // Función global para que el script no-modular pueda enviar el pedido
+  // Enviar pedido a Firestore
   window.abSendOrder = async (order) => {
     const payload = {
       ...order,
       status: 'pending',
       createdAt: serverTimestamp(),
-      day: new Date().toISOString().slice(0,10)
+      day: order.day || new Date().toISOString().slice(0,10)
     };
     const ref = await addDoc(collection(db, 'orders'), payload);
     return ref.id;
   };
+
+  // ===== ALERTA EN TIEMPO REAL (para ESTE dispositivo) =====
+  const DEVICE_ID = localStorage.getItem('ab-device-id') || '';
+  const alerted = new Set((JSON.parse(localStorage.getItem('ab-alerted')||'[]')));
+
+  function rememberAlert(id){
+    alerted.add(id);
+    localStorage.setItem('ab-alerted', JSON.stringify(Array.from(alerted)));
+  }
+
+  async function ensureNotifPermission(){
+    try{
+      if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    }catch(_){}
+  }
+
+  function showReadyAlert(docId, name){
+    const msg = `¡Pedido listo para ${name||'tu mesa'}! (ID: ${docId})`;
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Amistades Belgas', { body: msg });
+    } else {
+      alert(msg);
+    }
+    try {
+      const beep = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAABAAACAgAA');
+      beep.play().catch(()=>{});
+    } catch(_){}
+  }
+
+  (async function startWatcher(){
+    await ensureNotifPermission();
+    const today = new Date().toISOString().slice(0,10);
+    const q = query(
+      collection(db,'orders'),
+      where('day','==', today),
+      where('deviceId','==', DEVICE_ID)
+    );
+    onSnapshot(q, (snap)=>{
+      snap.docChanges().forEach(ch=>{
+        const d = ch.doc.data();
+        const id = ch.doc.id;
+        if (d.status === 'completed' && !alerted.has(id)) {
+          showReadyAlert(id, d.name);
+          rememberAlert(id);
+        }
+      });
+    });
+  })();
 </script>
 </body>
 </html>
