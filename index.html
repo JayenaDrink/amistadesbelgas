@@ -37,8 +37,7 @@
     .col-qty{width:20%}
     .col-sub{width:15%;text-align:right}
     .qty-wrap{display:flex;gap:8px;align-items:center}
-    .btn-circle{width:32px;height:32px;border-radius:6px;display:grid;place-items:center;font-size:18px}
-    .qty-input{width:64px;text-align:center}
+    .qty-select{min-width:84px}
     .footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
     .total-box{border:1px solid var(--brd2);border-radius:10px;padding:10px 12px;min-width:220px;background:var(--panel);text-align:right}
     .muted{color:var(--muted)}
@@ -90,6 +89,7 @@
         <button id="sendBtn">Enviar pedido</button>
         <button id="clearBtn">Borrar pedido</button>
         <div id="orderErr" class="error">Agrega al menos una bebida</div>
+        <div id="sendStatus" style="margin-top:6px;font-size:13px;display:none" aria-live="polite"></div>
       </div>
       <div class="total-box">
         <div class="muted" id="t-total">Total</div>
@@ -177,6 +177,7 @@ const totalEl = document.getElementById('totalAmount');
 const nameInput = document.getElementById('nameInput');
 const nameErr = document.getElementById('nameErr');
 const orderErr = document.getElementById('orderErr');
+const sendStatus = document.getElementById('sendStatus');
 
 function locale(){ return state.lang==='nl'?'nl-NL':state.lang==='fr'?'fr-FR':state.lang==='en'?'en-GB':'es-ES'; }
 
@@ -191,7 +192,7 @@ function lineSubtotal(d){ return (state.quantities[d.id]||0) * d.price; }
 
 function setQty(id, v){
   state.quantities[id]=v;
-  const inp=document.getElementById('inp-'+id); if(inp) inp.value=v;
+  const sel=document.getElementById('sel-'+id); if(sel) sel.value=String(v);
   const d = DRINKS.find(x=>x.id===id);
   const sub = document.getElementById('sub-'+id);
   if(sub && d) sub.textContent = `${lineSubtotal(d).toLocaleString(locale(),{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}`;
@@ -213,27 +214,23 @@ function renderTable(){
       <td class="col-price">${d.price.toLocaleString(locale(),{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
       <td class="col-qty">
         <div class="qty-wrap">
-          <button class="btn-circle" data-id="${d.id}" data-delta="-1">−</button>
-          <input class="qty-input" id="inp-${d.id}" type="number" min="0" value="${state.quantities[d.id]}"/>
-          <button class="btn-circle" data-id="${d.id}" data-delta="1">+</button>
+          <select class="qty-select" id="sel-${d.id}" aria-label="Cantidad para ${d.label[state.lang]}"></select>
         </div>
       </td>
       <td class="col-sub" id="sub-${d.id}">${lineSubtotal(d).toLocaleString(locale(),{minimumFractionDigits:2,maximumFractionDigits:2})} ${I18N[state.lang].currency}</td>
     `;
     rowsEl.appendChild(tr);
-  });
-  rowsEl.querySelectorAll('.btn-circle').forEach(b=>{
-    b.addEventListener('click', e=>{
-      const id=e.currentTarget.dataset.id;
-      const delta=parseInt(e.currentTarget.dataset.delta,10);
-      setQty(id, Math.max(0,(state.quantities[id]||0)+delta));
-    });
-  });
-  DRINKS.forEach(d=>{
-    const inp=document.getElementById('inp-'+d.id);
-    inp.addEventListener('change', ()=>{
-      let v=parseInt(inp.value||'0',10); if(isNaN(v)||v<0) v=0;
-      setQty(d.id, v);
+    const sel = tr.querySelector('#sel-'+d.id);
+    for(let i=0;i<=15;i++){
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = String(i);
+      if(i === state.quantities[d.id]) opt.selected = true;
+      sel.appendChild(opt);
+    }
+    sel.addEventListener('change', ()=>{
+      const v = parseInt(sel.value||'0',10);
+      setQty(d.id, isNaN(v)?0:v);
     });
   });
   updateTotals();
@@ -265,6 +262,7 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
   for(const k of Object.keys(state.quantities)) state.quantities[k]=0;
   renderTable();
   orderErr.style.display='none';
+  sendStatus.style.display='none';
 });
 
 document.getElementById('sendBtn').addEventListener('click', async ()=>{
@@ -286,15 +284,23 @@ document.getElementById('sendBtn').addEventListener('click', async ()=>{
 
   localStorage.setItem('ab-last-order', JSON.stringify(order));
 
+  // Limpia el estado visual
+  sendStatus.style.display='none';
   try {
     const docId = await (window.abSendOrder ? window.abSendOrder(order) : Promise.reject(new Error('Firestore no inicializado')));
     const msg = (I18N[state.lang].sent||'Pedido enviado (ID: {id}).').replace('{id}', docId);
-    alert(msg);
+    // ✅ Sin popup: mostrar mensaje inline
+    sendStatus.textContent = msg;
+    sendStatus.style.display='block';
+    sendStatus.style.color='#065f46'; // verde
     for(const k of Object.keys(state.quantities)) state.quantities[k]=0;
     renderTable();
   } catch(e) {
     console.error(e);
-    alert(I18N[state.lang].sendErr||'No se pudo enviar el pedido. Reintenta.');
+    // ❌ Sin popup: mostrar error inline
+    sendStatus.textContent = I18N[state.lang].sendErr||'No se pudo enviar el pedido. Reintenta.';
+    sendStatus.style.display='block';
+    sendStatus.style.color='#b91c1c'; // rojo
   }
 });
 
@@ -353,6 +359,8 @@ renderTable();
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Amistades Belgas', { body: msg });
     } else {
+      // Conservamos el fallback actual (alert) para avisos de preparación.
+      // Si también quieres quitar este popup, dímelo y lo cambiamos por un banner.
       alert(msg);
     }
     try {
